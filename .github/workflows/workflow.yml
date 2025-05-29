@@ -37,6 +37,10 @@ jobs:
           cache: 'pnpm'
       - name: Install deps
         run: pnpm install
+
+      - name: Install playwright chromium
+        run: pnpm exec playwright install chromium
+
       - name: Test and Build
         run: pnpm run test && pnpm run build
 

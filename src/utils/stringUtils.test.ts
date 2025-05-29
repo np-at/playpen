@@ -1,4 +1,4 @@
-import {describe, it, expect, test} from "vitest"
+import {describe, it, expect} from "vitest"
 import {randStr2} from "./stringUtils"
 
 
