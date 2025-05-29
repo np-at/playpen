@@ -1,0 +1,60 @@
+name: workflow.yml
+on:
+  push:
+    branches:
+      - 'main'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  pages: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+jobs:
+  build:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: '1'
+          repository: '${{ github.repository }}'
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+      - name: Install deps
+        run: pnpm install
+      - name: Test and Build
+        run: pnpm run test && pnpm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        with:
+          token: '${{ github.token }}'
+          enablement: 'false'
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Upload build artifacts
+          path: "dist/"
+          retention-days: '1'
+          name: 'github-pages'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          token: '${{ github.token }}'
+          artifact_name: 'github-pages'

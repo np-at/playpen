@@ -1,22 +1,21 @@
+/// <reference types="vitest/config" />
 import {defineWorkspace} from "vitest/config";
+
 
 export default defineWorkspace([
     {
         extends: "./vite.config.ts",
         test: {
             name: "browser-tests",
-            include:["**/*.test.ts"],
-            environment: 'node',
+            include: ["**/*.test.ts"],
+
             browser: {
-                instances:[{browser: 'chromium'}],
+                instances: [{browser: 'chromium'}],
                 provider: 'playwright',
                 enabled: true,
                 headless: true,
-                api:{
+                api: {
                     port: 12222
-                },
-                providerOptions: {
-                    launch: {}
                 }
             }
         }
@@ -26,7 +25,7 @@ export default defineWorkspace([
         test: {
             includeTaskLocation: true,
             name: 'node-tests',
-            include: ["src/**/*.spec.ts"],
+            include: ["**/*.spec.{ts,js}"],
             environment: 'node',
             typecheck: {
                 tsconfig: 'tsconfig.json'

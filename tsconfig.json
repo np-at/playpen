@@ -4,7 +4,7 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "types": ["@vitest/browser/providers/playwright", "vitest", "@vitest/browser"],
+    "types": ["@vitest/browser/providers/playwright", "vitest", "@vitest/browser", "@vitest/browser/matchers"],
     "skipLibCheck": true,
     "sourceMap": true,
 
@@ -29,6 +29,7 @@
   "include": [
     "src/**/*.ts",
     "**/*.d.ts",
+    "InlineTSPlugin.ts",
     "vitest.workspace.ts",
     "vite.config.ts",
     "eslint.config.mjs",

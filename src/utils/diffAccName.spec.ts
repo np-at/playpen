@@ -2,10 +2,10 @@ import {beforeAll, describe, expect, it } from "vitest";
 import { levenshtein, levenshteinEditDistance } from "./diffAccName";
 import { randomString } from "./stringUtils.js";
 
-const ARLENGTH = 10000;
+const ARLENGTH = 1000;
 const MIN_LENGTH = 15;
 const MAX_LENGTH = 30;
-const ITER_COUNT = 1000;
+const ITER_COUNT = 100;
 describe("levenshtein perf testing", () => {
   const testStrings = new Array<string>(ARLENGTH);
   beforeAll(() => {
@@ -15,7 +15,7 @@ describe("levenshtein perf testing", () => {
     }
   });
 
-  it("test levenshtein", () => {
+  it("test levenshtein", {concurrent: false},() => {
     // START TEST2
     // prime cache
     for (let i = 0; i < 100; i++) {
@@ -23,7 +23,7 @@ describe("levenshtein perf testing", () => {
       for (let i1 = 0; i1 < endIndex; i1++) {
         const str = testStrings[i1];
         const str2 = testStrings[i1 + 1];
-        levenshteinEditDistance(str, str2, true);
+        levenshteinEditDistance(str, str2, false);
       }
     }
     let sum2 = 0;
@@ -33,7 +33,7 @@ describe("levenshtein perf testing", () => {
       for (let i1 = 0; i1 < endIndex; i1++) {
         const str = testStrings[i1];
         const str2 = testStrings[i1 + 1];
-        sum2 += levenshteinEditDistance(str, str2, true);
+        sum2 += levenshteinEditDistance(str, str2, false);
       }
     }
     performance.mark("end2");

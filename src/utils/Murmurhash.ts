@@ -45,10 +45,13 @@ export class Murmurhash3 {
     i = 0;
     // noinspection FallThroughInSwitchStatementJS
     switch (this.rem) {
+        // @ts-expect-error fallthrough intentional
       case 0:
         k1 ^= len > i ? key.charCodeAt(i++) & 0xffff : 0;
+        // @ts-expect-error fallthrough intentional
       case 1:
         k1 ^= len > i ? (key.charCodeAt(i++) & 0xffff) << 8 : 0;
+        // @ts-expect-error fallthrough intentional
       case 2:
         k1 ^= len > i ? (key.charCodeAt(i++) & 0xffff) << 16 : 0;
       case 3:
@@ -81,8 +84,10 @@ export class Murmurhash3 {
       k1 = 0;
       // noinspection FallThroughInSwitchStatementJS
       switch (this.rem) {
+          // @ts-expect-error fallthrough intentional
         case 3:
           k1 ^= (key.charCodeAt(i + 2) & 0xffff) << 16;
+          // @ts-expect-error fallthrough intentional
         case 2:
           k1 ^= (key.charCodeAt(i + 1) & 0xffff) << 8;
         case 1:
