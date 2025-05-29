@@ -41,8 +41,10 @@ jobs:
       - name: Install playwright chromium
         run: pnpm exec playwright install chromium
 
-      - name: Test and Build
-        run: pnpm run test && pnpm run build
+      - name: Run tests
+        run: pnpm run test
+      - name: Build
+        run: pnpm exec vite build --base /playpen/ --config vite.config.ts
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
