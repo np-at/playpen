@@ -1,43 +1,26 @@
-import './style.css'
+import { short_uuid } from "./utils/stringUtils.ts";
 
 // import { setupCounter } from './counter.ts'
 // import asdf from "ts:./_bookmarklets/ImageCheck.ts"
 
-import('ts:./_bookmarklets/fcs.ts').then((x)=>makeLink(x.default,'fcs'))
+void import('ts:./_bookmarklets/fcs.ts').then((x)=>makeLink(x.default,'fcs'))
 
-import('ts:./_bookmarklets/Axify.ts').then((x)=>makeLink(x.default,'Axify'))
-import('ts:./_bookmarklets/AxifyTargeted.ts').then((x)=>makeLink(x.default,'AxifyTargeted'))
-import('ts:./_bookmarklets/ForceFocusOutline.ts').then((x)=>makeLink(x.default,'ForceFocusOutline'))
-import('ts:./_bookmarklets/TextSpacing.ts').then((x)=>makeLink(x.default,'TextSpacing'))
-import('ts:./_bookmarklets/MonitorAriaLive.ts').then((x)=>makeLink(x.default,'AriaLiveObserver'))
-import('ts:./_bookmarklets/showHeadings.ts').then((x)=>makeLink(x.default,'ShowHeadings'))
-import('ts:./_bookmarklets/FindDuplicateIds.ts').then((x)=>makeLink(x.default,'FindDuplicateIds'))
-import('ts:./_bookmarklets/HoverTest.ts').then((x)=>makeLink(x.default,'HoverTest'))
-import('ts:./_bookmarklets/IdentifyExplicitNames.ts').then((x)=>makeLink(x.default,'IdentifyExplicitNames'))
-import('ts:./_bookmarklets/ImageCheck.ts').then((x)=>makeLink(x.default,'ImageChecker'))
-import('ts:./_bookmarklets/Pathify.ts').then((x)=>makeLink(x.default,'Pathify'))
-import('ts:./_bookmarklets/MakeSkele.ts').then((x)=>makeLink(x.default,'MakeSkele'))
-
-import('ts:./_bookmarklets/ShowImageAlt.ts').then((x)=>makeLink(x.default,'ShowImageAlt'))
-import('ts:./_bookmarklets/dupeIdCheck.ts').then((x)=>makeLink(x.default,'DupeId'))
-import('ts:./_bookmarklets/TextObserver.ts').then((x)=>makeLink(x.default,'TextObserver'))
-// document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-//   <div>
-//     <a href="https://vite.dev" target="_blank">
-//       <img src="${viteLogo}" class="logo" alt="Vite logo" />
-//     </a>
-//     <a href="https://www.typescriptlang.org/" target="_blank">
-//       <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-//     </a>
-//     <h1>Vite + TypeScript</h1>
-//     <div class="card">
-//       <button id="counter" type="button"></button>
-//     </div>
-//     <p class="read-the-docs">
-//       Click on the Vite and TypeScript logos to learn more
-//     </p>
-//   </div>
-// `
+void import('ts:./_bookmarklets/Axify.ts').then((x)=>makeLink(x.default,'Axify'))
+void import('ts:./_bookmarklets/AxifyTargeted.ts').then((x)=>makeLink(x.default,'AxifyTargeted'))
+void import('ts:./_bookmarklets/ForceFocusOutline.ts').then((x)=>makeLink(x.default,'ForceFocusOutline'))
+void import('ts:./_bookmarklets/TextSpacing.ts').then((x)=>makeLink(x.default,'TextSpacing'))
+void import('ts:./_bookmarklets/MonitorAriaLive.ts').then((x)=>makeLink(x.default,'AriaLiveObserver'))
+void import('ts:./_bookmarklets/showHeadings.ts').then((x)=>makeLink(x.default,'ShowHeadings'))
+void import('ts:./_bookmarklets/FindDuplicateIds.ts').then((x)=>makeLink(x.default,'FindDuplicateIds'))
+void import('ts:./_bookmarklets/HoverTest.ts').then((x)=>makeLink(x.default,'HoverTest'))
+void import('ts:./_bookmarklets/IdentifyExplicitNames.ts').then((x)=>makeLink(x.default,'IdentifyExplicitNames'))
+void import('ts:./_bookmarklets/ImageCheck.ts').then((x)=>makeLink(x.default,'ImageChecker'))
+void import('ts:./_bookmarklets/Pathify.ts').then((x)=>makeLink(x.default,'Pathify'))
+void import('ts:./_bookmarklets/MakeSkele.ts').then((x)=>makeLink(x.default,'MakeSkele'))
+void import('ts:./_bookmarklets/ShowImageAlt.ts').then((x)=>makeLink(x.default,'ShowImageAlt'))
+void import('ts:./_bookmarklets/dupeIdCheck.ts').then((x)=>makeLink(x.default,'DupeId'))
+void import('ts:./_bookmarklets/TextObserver.ts').then((x)=>makeLink(x.default,'TextObserver'))
+void import('ts:./_bookmarklets/FocusStyleCheck.ts').then((x)=>makeLink(x.default,'FocusStyleCheck'))
 
 // const root = document.querySelector("#root");
 const root = document.createElement('div')
@@ -54,13 +37,12 @@ const makeLink = (x:  string, name: string): void => {
     const anchorElement = document.createElement("a");
     anchorElement.href = x;
     anchorElement.innerText = name;
-    anchorElement.id = "asdfas"
+    anchorElement.id = short_uuid()
     rowDiv.appendChild(anchorElement);
     root.appendChild(rowDiv)
 
 };
 
-import('ts:./_bookmarklets/ShowImageAlt.ts').then(d=>makeLink(d.default, "ShowImageAlt"))
 
 // makeLink(( ), "ShowImageAlt");
 // makeLink(fcs, "fcs");

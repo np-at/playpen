@@ -1,115 +1,114 @@
-import {TypescriptBundler} from "@puresamari/ts-bundler";
-import type {Plugin} from "vite";
-import {createFilter, transformWithEsbuild} from "vite";
-
-import path, {join, resolve} from "node:path";
-
+import type { Plugin } from "vite";
+import { createFilter } from "vite";
+import {join, dirname } from "node:path";
+import { build } from "esbuild";
 
 const defaults = {
-    exclude: null,
-    include: null
+  exclude: null,
+  include: null,
+  minify: true
 };
 
 function cleanCode(c: string) {
-    return c.trim();
+  return c.trim();
 }
 
 const formatAsBookmarklet = (code: string, encode = true) => {
-    return "'javascript:" + (encode ? encodeURIComponent : (e: string) => e)("(function(){" + cleanCode(code)).replace(/(')/g, "\\$1") + "})();'";
+  return (
+    "'javascript:" +
+    (encode ? encodeURIComponent : (e: string) => e)("(async ()=>{" + cleanCode(code)).replace(/(')/g, "\\$1") +
+    "})();'"
+  );
 };
 
-async function compile(inputFile: string, minify: boolean) {
+async function compile(inputFile: string, minify: boolean, isDebug = false) {
+  // const bundler = new TypescriptBundler(resolve(import.meta.dirname, inputFile), join(import.meta.dirname, "tsconfig.json"));
+  // const r = await bundler.bundle();
 
-    const bundler = new TypescriptBundler(resolve(import.meta.dirname, inputFile), join(import.meta.dirname, "tsconfig.json"));
-    const r = await bundler.bundle();
 
-    if (minify) {
-        const minified = await transformWithEsbuild(r.output, inputFile, {
-            minify: true,
-            target: 'esnext',
-            platform: 'browser',
-            treeShaking: true,
-            sourcemap: 'external',
-            keepNames: false,
-            legalComments: 'none',
-            format: 'cjs',
-            mangleProps: /_$/,
-            minifyWhitespace: true,
-            minifyIdentifiers: true,
-            minifySyntax: true,
-            loader: 'js',
-            mangleQuoted: true
-        })
-        if (!minified.code) {
-            throw new Error("Failed to minify code");
-        }
-        // console.info(`compiled ${inputFile} to ${minified.code.length} bytes; unminified: ${r.output.length} bytes`);
-        console.info(`${inputFile}: ${r.output.length / 1000}kb  -->  ${minified.code.length / 1000}kb`)
+  const buildResult = await build({
+    bundle: true,
+    entryPoints: [inputFile],
+    treeShaking: true,
 
-        return {
-            code: formatAsBookmarklet(minified.code, true),
-            map: minified.map,
-        };
-    } else {
-        return {
-            code: formatAsBookmarklet(r.output),
-            map: r.map
-        };
-    }
+    write: false,
+    sourcemap: isDebug ? 'inline' : false,
+    sourcesContent: true,
+    platform: "browser",
+    splitting:false,
+    outdir: 'dist/',
+    tsconfigRaw: {
+      compilerOptions: {
+        target: "ES2022",
+        useDefineForClassFields: true,
+        verbatimModuleSyntax: true,
+        strict: true,
+      },
+    },
+
+    ...(minify ? {
+      minify: true,
+      treeShaking: true,
+      keepNames: false,
+      legalComments: "none",
+      format: "esm",
+      mangleProps: /_$/,
+      minifyWhitespace: true,
+      minifyIdentifiers: true,
+      minifySyntax: true,
+      mangleQuoted: true} : {})
+  });
+  const code = buildResult.outputFiles.find(x=>x.path.endsWith('.js'))
+  // const sourceMap = JSON.parse(buildResult.outputFiles.find(x=>x.path.endsWith('.map'))?.text ?? '') as SourceMap | undefined
+  if (!code){
+    throw new Error(`code result not found during bundling of ${inputFile}`)
+  }
+  return formatAsBookmarklet(code.text, true)
 }
 
-
 export default function inlineTS(opts = {}): Plugin {
-    const options = Object.assign({}, defaults, opts);
-    const filter = createFilter(options.include, options.exclude);
-    const resolved: { [key: string]: { content: string | null } } = {};
+  const options = Object.assign({}, defaults, opts);
+  const filter = createFilter(options.include, options.exclude);
+  const resolved: { [key: string]: { content: string | null } } = {};
 
-    return {
-        name: 'inlineTS',
-        resolveId(source, importer) {
-            if (source.indexOf('ts:') === -1) {
-                return null;
-            }
-            if (!source.startsWith('ts:')) {
-                return null;
-            }
-            const _src = source.slice(3)
+  return {
+    name: "inlineTS",
+    resolveId(source, importer) {
+      if (source.indexOf("ts:") === -1) {
+        return null;
+      }
+      if (!source.startsWith("ts:")) {
+        return null;
+      }
+      const _src = source.slice(3);
 
-            if (!_src.startsWith(".")) {
-                resolved[_src] = {content: ''}
-                return _src;
-            }
-            if (!importer) return null;
-            const newId = path.join(path.dirname(importer), _src);
-            resolved[newId] = {content: ''}
-            // const newId =  id.slice(3);
-            // console.warn(`new id is ${newId}`)
-            return newId
-        },
-        enforce: 'pre',
-        async load(this, id: string) {
-            // console.log(`id: ${id}`)
-            // console.log(`resolved: ${JSON.stringify(resolved)}`)
-            if (id.startsWith('ts:')) {
-                console.error("BLAAAA")
-            }
-            if (!filter(id)) {
-                return null;
-            }
-            if (!resolved[id]) {
-                return null;
-            }
+      if (!_src.startsWith(".")) {
+        resolved[_src] = { content: "" };
+        return _src;
+      }
+      if (!importer) return null;
+      const newId = join(dirname(importer), _src);
+      resolved[newId] = { content: "" };
+      // const newId =  id.slice(3);
+      // console.warn(`new id is ${newId}`)
+      return newId;
+    },
+    enforce: "pre",
+    async load(this, id: string) {
+      if (!filter(id)) {
+        return null;
+      }
+      if (!resolved[id]) {
+        return null;
+      }
 
+      this.addWatchFile(id);
 
-            this.addWatchFile(id)
+      const code = await compile(id, options.minify, false);
 
-            const code = await compile(id, true);
-
-            return {
-                code: `export default ${code.code.trim()}`
-            };
-
-
-        }
-    }
+      return {
+        code: `export default ${code.trim()}`,
+      };
+    },
+  };
 }
