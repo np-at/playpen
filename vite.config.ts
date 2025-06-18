@@ -2,8 +2,9 @@
 import { relative, resolve } from "node:path";
 import { readdirSync } from "node:fs";
 import type { ViteUserConfig } from "vitest/config";
-import inlineTS from "./InlineTSPlugin.ts";
+import inlineTS from "./InlineTSPlugin";
 import Inspect from "vite-plugin-inspect";
+import type { Plugin } from "vite";
 
 const SOURCE_ROOT = "src/";
 
@@ -42,12 +43,36 @@ const htmlFiles = findFiles(/.*\.html$/, { startDir: __dirname }).reduce<Record<
   // }
   return prev;
 }, {});
-console.warn(htmlFiles);
+
+// console.warn(htmlFiles);
+function siteMapPlugin(): Plugin {
+  const virtualModuleId = "virtual:site-map";
+  const resolvedVirtualModuleId = "\0" + virtualModuleId;
+
+  return {
+    name: "my-plugin", // required, will show up in warnings and errors
+    resolveId(id) {
+      if (id === virtualModuleId) {
+        return resolvedVirtualModuleId;
+      }
+    },
+    load(this, id) {
+      if (id === resolvedVirtualModuleId) {
+        return `export const htmlFiles = ${JSON.stringify(htmlFiles)}`;
+      }
+    },
+  };
+}
 
 export default {
   appType: "mpa",
   root: SOURCE_ROOT,
+  css: {
+    transformer: "postcss",
+    modules: {},
+  },
   build: {
+    target: "esnext",
     sourcemap: true,
     rollupOptions: {
       input: htmlFiles,
@@ -59,9 +84,39 @@ export default {
   server: {
     port: 5922,
   },
-  plugins: [Inspect(), inlineTS()],
+  plugins: [siteMapPlugin(), Inspect(), inlineTS()],
   test: {
-    workspace: "./vitest.workspace.ts",
+    projects: [
+      {
+        extends: "./vite.config.ts",
+        test: {
+          name: "browser-tests",
+          include: ["**/*.test.ts"],
+
+          browser: {
+            instances: [{ browser: "chromium" }],
+            provider: "playwright",
+            enabled: true,
+            headless: true,
+            api: {
+              port: 12222,
+            },
+          },
+        },
+      },
+      {
+        extends: "./vite.config.ts",
+        test: {
+          includeTaskLocation: true,
+          name: "node-tests",
+          include: ["**/*.spec.{ts,js}"],
+          environment: "node",
+          typecheck: {
+            tsconfig: "tsconfig.json",
+          },
+        },
+      },
+    ],
     coverage: {
       reportsDirectory: "coverage",
       include: ["**/*.{ts,js}"],

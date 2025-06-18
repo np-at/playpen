@@ -59,26 +59,33 @@ const defaultStyle: DrawStyleProps = {
  * @param {boolean} skipRemoval - If true, existing elements with the same ID will not be removed.
  */
 
-export function drawBox(element: Element, utilityName: string, content?: string, style?: DrawStyleProps, id?: string, skipRemoval = false): void {
+export function drawBox(
+  element: Element,
+  utilityName: string,
+  content?: string,
+  style?: DrawStyleProps,
+  id?: string,
+  skipRemoval = false,
+): void {
   const blockDiv = document.createElement("div");
 
   if (id) {
     if (!skipRemoval) {
-      document.querySelectorAll('#' + id).forEach(z=> {
+      document.querySelectorAll("#" + id).forEach((z) => {
         z.remove();
       });
     }
     // remove any existing element with the same ID (
 
-    blockDiv.id = id ;
+    blockDiv.id = id;
   }
   const coords = element.getBoundingClientRect();
   // console.log("el", element)
   // console.log("coords", coords);
   blockDiv.setAttribute("rel", utilityName);
   blockDiv.className = "segment-rect";
-  blockDiv.style.left = `${coords.left}px`// `${coords.x + (coords.width / 2) - 100}px`;
-  blockDiv.style.top = `${coords.top}px` // `${coords.y + (coords.height / 2) - 10}px`;
+  blockDiv.style.left = `${coords.left}px`; // `${coords.x + (coords.width / 2) - 100}px`;
+  blockDiv.style.top = `${coords.top}px`; // `${coords.y + (coords.height / 2) - 10}px`;
   blockDiv.style.width = `${coords.width}px`;
   blockDiv.style.height = `${coords.height}px`;
   blockDiv.style.position = "absolute";

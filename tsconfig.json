@@ -14,12 +14,12 @@
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
-
+    "outDir": "out/",
     /* Linting */
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "erasableSyntaxOnly": true,
+    //    "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "allowSyntheticDefaultImports": true,
@@ -27,12 +27,13 @@
     "checkJs": true
   },
   "include": [
-    "src/**/*.ts",
+    "./src/**/*.ts",
+    "./src/**/*.mjs",
     "**/*.d.ts",
     "InlineTSPlugin.ts",
     "vitest.workspace.ts",
     "vite.config.ts",
     "eslint.config.mjs",
-    "playwright.config.ts",
+    "playwright.config.ts"
   ]
 }

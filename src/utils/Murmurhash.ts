@@ -11,7 +11,6 @@
  * @see http://sites.google.com/site/murmurhash/
  */
 
-
 // Call this function without `new` to use the cached object (good for
 // single-threaded environments), or with `new` to create a new object.
 //
@@ -45,13 +44,13 @@ export class Murmurhash3 {
     i = 0;
     // noinspection FallThroughInSwitchStatementJS
     switch (this.rem) {
-        // @ts-expect-error fallthrough intentional
+      // @ts-expect-error fallthrough intentional
       case 0:
         k1 ^= len > i ? key.charCodeAt(i++) & 0xffff : 0;
-        // @ts-expect-error fallthrough intentional
+      // @ts-expect-error fallthrough intentional
       case 1:
         k1 ^= len > i ? (key.charCodeAt(i++) & 0xffff) << 8 : 0;
-        // @ts-expect-error fallthrough intentional
+      // @ts-expect-error fallthrough intentional
       case 2:
         k1 ^= len > i ? (key.charCodeAt(i++) & 0xffff) << 16 : 0;
       case 3:
@@ -84,10 +83,10 @@ export class Murmurhash3 {
       k1 = 0;
       // noinspection FallThroughInSwitchStatementJS
       switch (this.rem) {
-          // @ts-expect-error fallthrough intentional
+        // @ts-expect-error fallthrough intentional
         case 3:
           k1 ^= (key.charCodeAt(i + 2) & 0xffff) << 16;
-          // @ts-expect-error fallthrough intentional
+        // @ts-expect-error fallthrough intentional
         case 2:
           k1 ^= (key.charCodeAt(i + 1) & 0xffff) << 8;
         case 1:
@@ -133,7 +132,7 @@ export class Murmurhash3 {
   // @param {number} seed An optional positive integer
   public reset(seed?: number): this {
     this.h1 = typeof seed === "number" ? seed : 0;
-    this.rem =0;
+    this.rem = 0;
     this.k1 = 0;
     this.len = 0;
     return this;

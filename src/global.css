@@ -1,3 +1,6 @@
+@import url("./reset.css");
+
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -5,7 +8,7 @@
 
   color-scheme: light dark;
   --primary-text-color: rgba(255, 255, 255, 0.87);
-  --background-color:  #242424;
+  --background-color: #242424;
   /*color: rgba(255, 255, 255, 0.87);*/
   /*background-color: #242424;*/
   color: var(--primary-text-color);
@@ -27,7 +30,7 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
+  /*display: flex;*/
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
@@ -96,4 +99,23 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+.body {
+  text-align: left;
+  width: 80%;
+}
+.sidebar {
+  text-align: left;
+  display: inline-block;
+  margin-right: auto;
+  left: 0;
+}
+
+.main {
+  display: inline-block;
+}
+
+li,ul {
+  list-style: none;
 }

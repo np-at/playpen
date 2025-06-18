@@ -1,4 +1,3 @@
-
 // noinspection JSUnusedGlobalSymbols
 declare module "aria-api" {
   export const getRole: (el: Element) => string;

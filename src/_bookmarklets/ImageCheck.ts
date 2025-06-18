@@ -1,27 +1,26 @@
 // ImageCheck
 
-
 const invalidAltRegexes = [
-    /^img.*/,
-    /^image.*/,
-    /^picture.*/,
-    /^photo.*/,
-    /^photograph.*/,
-    /^photography.*/,
-    /^graphic.*/,
-    /^\s*alt/,
-    /^\s+$/,
-    /=/,
+  /^img.*/,
+  /^image.*/,
+  /^picture.*/,
+  /^photo.*/,
+  /^photograph.*/,
+  /^photography.*/,
+  /^graphic.*/,
+  /^\s*alt/,
+  /^\s+$/,
+  /=/,
 ];
 
 function testInvalidAltAttr(attr: string): boolean {
-    return invalidAltRegexes.some((x) => x.test(attr));
+  return invalidAltRegexes.some((x) => x.test(attr));
 }
 
 function testValidAltAttributes(rootEl: HTMLElement): HTMLElement[] {
-    console.log("testValidAltAttributes");
-    const images = Array.from(rootEl.querySelectorAll("img"));
-    return images.filter((x) => !x.alt || testInvalidAltAttr(x.alt));
+  console.log("testValidAltAttributes");
+  const images = Array.from(rootEl.querySelectorAll("img"));
+  return images.filter((x) => !x.alt || testInvalidAltAttr(x.alt));
 }
 
 // const $: (aAltButtonAltLabelAlt: string) => HTMLElement = (aAltButtonAltLabelAlt: string) => {

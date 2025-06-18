@@ -115,7 +115,7 @@ collapseButton.addEventListener("click", () => {
   const newAriaExpanded = oldariaExpanded === "false" ? "true" : "false";
   resultsContainer.setAttribute("aria-expanded", newAriaExpanded);
 
-  resultsContainer.style.display = `${newAriaExpanded === "true" ? "block" : "none"}`;
+  resultsContainer.style.display = newAriaExpanded === "true" ? "block" : "none";
 });
 controlsContainer.appendChild(collapseButton);
 

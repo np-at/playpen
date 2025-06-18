@@ -1,23 +1,23 @@
-@import "/style.css";
+@import "/global.css";
 *:focus {
-    outline:  none;
+  outline: none;
 }
 *:focus-visible {
-    outline: none;
+  outline: none;
 }
 /*a:focus {*/
 /*    outline:2px solid red;*/
 /*}*/
-a,button {
-    &:focus-visible {
-        outline: 2px solid red;
-
-    }
+a,
+button {
+  &:focus-visible {
+    outline: 2px solid red;
+  }
 }
 .focus-only:focus {
-    outline: 2px solid black;
+  outline: 2px solid black;
 }
 
 .fv:focus-visible {
-    outline: 2px solid black;
+  outline: 2px solid black;
 }

@@ -1,12 +1,12 @@
 import type { Plugin } from "vite";
 import { createFilter } from "vite";
-import {join, dirname } from "node:path";
+import { join, dirname } from "node:path";
 import { build } from "esbuild";
 
 const defaults = {
   exclude: null,
   include: null,
-  minify: true
+  minify: true,
 };
 
 function cleanCode(c: string) {
@@ -25,18 +25,17 @@ async function compile(inputFile: string, minify: boolean, isDebug = false) {
   // const bundler = new TypescriptBundler(resolve(import.meta.dirname, inputFile), join(import.meta.dirname, "tsconfig.json"));
   // const r = await bundler.bundle();
 
-
   const buildResult = await build({
     bundle: true,
     entryPoints: [inputFile],
     treeShaking: true,
 
     write: false,
-    sourcemap: isDebug ? 'inline' : false,
+    sourcemap: isDebug ? "inline" : false,
     sourcesContent: true,
     platform: "browser",
-    splitting:false,
-    outdir: 'dist/',
+    splitting: false,
+    outdir: "dist/",
     tsconfigRaw: {
       compilerOptions: {
         target: "ES2022",
@@ -46,24 +45,27 @@ async function compile(inputFile: string, minify: boolean, isDebug = false) {
       },
     },
 
-    ...(minify ? {
-      minify: true,
-      treeShaking: true,
-      keepNames: false,
-      legalComments: "none",
-      format: "esm",
-      mangleProps: /_$/,
-      minifyWhitespace: true,
-      minifyIdentifiers: true,
-      minifySyntax: true,
-      mangleQuoted: true} : {})
+    ...(minify
+      ? {
+          minify: true,
+          treeShaking: true,
+          keepNames: false,
+          legalComments: "none",
+          format: "esm",
+          mangleProps: /_$/,
+          minifyWhitespace: true,
+          minifyIdentifiers: true,
+          minifySyntax: true,
+          mangleQuoted: true,
+        }
+      : {}),
   });
-  const code = buildResult.outputFiles.find(x=>x.path.endsWith('.js'))
+  const code = buildResult.outputFiles.find((x) => x.path.endsWith(".js"));
   // const sourceMap = JSON.parse(buildResult.outputFiles.find(x=>x.path.endsWith('.map'))?.text ?? '') as SourceMap | undefined
-  if (!code){
-    throw new Error(`code result not found during bundling of ${inputFile}`)
+  if (!code) {
+    throw new Error(`code result not found during bundling of ${inputFile}`);
   }
-  return formatAsBookmarklet(code.text, true)
+  return formatAsBookmarklet(code.text, true);
 }
 
 export default function inlineTS(opts = {}): Plugin {

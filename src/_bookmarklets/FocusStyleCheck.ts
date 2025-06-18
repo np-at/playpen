@@ -32,7 +32,7 @@ async function testFocusStyles(el: HTMLElement): Promise<ObjectDiff | null> {
   // assume that elements with aria-hidden, or elements descended from aria-hidden are not meant to receive focus
   if (el.closest('[aria-hidden="true"]') !== null) return null;
   // same for inert
-  if (el.closest('[inert]') !== null) return null
+  if (el.closest("[inert]") !== null) return null;
   // assume natively focusable elements with tabindex="-1" are intentionally removed from focus order (ie not going to be a programmatic focus target)
   if (el.getAttribute("tabindex") === "-1" && el.tagName in ["a", "button", "input"]) return null;
 
@@ -107,7 +107,7 @@ async function focusStyleCheck() {
     console.warn("found unequal elements", res);
   }
   if (untestable) {
-    console.info("untestable elements", untestable)
+    console.info("untestable elements", untestable);
   }
 }
 

@@ -1,4 +1,5 @@
 import { applyToShadows } from "../utils/applyToShadows";
+
 function ForceFocusOutline(): void {
   const d = document;
   const id = "phlffobkmklt";

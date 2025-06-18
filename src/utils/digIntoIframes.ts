@@ -20,7 +20,7 @@ export function digIntoIframes(root: Document | ShadowRoot, fxn: (arg0: Document
               console.error(err);
             });
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
           console.error(err);
         });
     }

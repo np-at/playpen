@@ -11,7 +11,7 @@ highlighterEl.style.cssText =
   "pointer-events: none; position: fixed; border: 1px dashed #0081BE; box-shadow: 0 0 54px 0 rgba(0,84,150,0.3); display: none; z-index: 1000000; transition: all 200ms;";
 
 // remove existing instances
-let container = document.getElementById(containerId) as HTMLDivElement;
+let container = document.getElementById(containerId) as HTMLDivElement|null;
 if (container != null) {
   document.body.removeChild(container);
 }
@@ -76,7 +76,7 @@ iframe.onload = function () {
     "mouseover",
     function (event: MouseEvent) {
       let link: HTMLLinkElement | null = null;
-      if ((event.target as HTMLElement)?.nodeName?.toUpperCase() === "A") {
+      if ((event.target as HTMLElement|null)?.nodeName.toUpperCase() === "A") {
         link = event.target as HTMLLinkElement | null;
       } else if (
         (event.target as HTMLElement).parentElement != null &&
@@ -85,7 +85,7 @@ iframe.onload = function () {
         link = (event.target as HTMLElement).parentElement as HTMLLinkElement | null;
       }
       if (link == null) return;
-      const index = parseInt(link?.getAttribute("href")?.substr(1) ?? "-1", 10);
+      const index = parseInt(link.getAttribute("href")?.slice(1) ?? "-1", 10);
       const target = outline[index].el;
       highlightElement(target, undefined);
     },
@@ -99,7 +99,7 @@ iframe.onload = function () {
     const target = doc.querySelector(".result");
     if (target == null) throw new Error("target null");
     if (checkbox != null) {
-      const check = function (e?: Event  ): void {
+      const check = function (e?: Event): void {
         if (checkbox.checked) {
           target.classList.add(className);
         } else {
@@ -116,6 +116,8 @@ iframe.onload = function () {
 document.body.appendChild(container);
 
 function updateHeight(): void {
+  if (!container)
+    return;
   container.style.height = "0px";
   container.style.height = `${doc.scrollingElement?.scrollHeight ?? 0}px`;
 }
@@ -258,7 +260,7 @@ function highlightElement(el: HTMLElement, disableAutoScroll: boolean | undefine
   if (!disableAutoScroll) {
     if ("scrollIntoViewIfNeeded" in el) {
       /** @see https://developer.mozilla.org/en-US/docs/Web/API/Element/scrollIntoViewIfNeeded */
-      (el.scrollIntoViewIfNeeded as (this:HTMLElement, centerIfNeeded?: boolean)=>void)();
+      (el.scrollIntoViewIfNeeded as (this: HTMLElement, centerIfNeeded?: boolean) => void)();
     } else {
       el.scrollIntoView();
     }

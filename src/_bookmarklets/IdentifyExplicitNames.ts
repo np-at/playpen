@@ -23,12 +23,11 @@ function IdentifyLabelTargets(x: HTMLLabelElement): HTMLElement | undefined {
   return undefined;
 }
 
-const Labelling =  {
+const Labelling = {
   ariaLabel: "aria-label",
   ariaLabeledBy: "aria-labelledby",
   externalLabel: "external label",
 } as const;
-
 
 interface LabelledElement {
   name: string;
@@ -66,7 +65,7 @@ function IdentifyExplicitNames(target: HTMLElement): boolean {
     .map(IdentifyLabelTargets)
     .map(
       (x) =>
-        (x != null) && {
+        x != null && {
           name: getName(x),
           labellingMethod: Labelling.externalLabel,
           target: x,

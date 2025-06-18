@@ -78,9 +78,9 @@ function addDisplayItem(text: string, style: DrawStyleProps, scrollTo?: string):
 }
 
 type AltTextErr = {
-  msg:string;
+  msg: string;
   el: Element;
-}
+};
 /**
  * Testing comment
  * @param reset
@@ -108,7 +108,6 @@ export default function _main(reset: boolean = false): void {
         overlayText = "[Presentational image]";
         break;
       case null:
-      case undefined:
         overlayText = "[Missing alt text]";
         style.backgroundColor = "rgba(255, 0, 0, 0.8)";
         style.color = "white";
@@ -119,7 +118,7 @@ export default function _main(reset: boolean = false): void {
     }
     if (alt && ATName) {
       if (alt !== ATName) {
-        errors.push({msg:`alt text "${alt}" does not match accessible name "${ATName}" for `,el});
+        errors.push({ msg: `alt text "${alt}" does not match accessible name "${ATName}" for `, el });
         // console.warn(`alt text "${alt}" does not match accessible name "${ATName}" for `, el);
         style.borderColor = "goldenrod";
         overlayText = `WARN: accessible name does not match alt text\n Alt: ${alt}\n Accessible Name: ${ATName}`;
@@ -128,10 +127,10 @@ export default function _main(reset: boolean = false): void {
     const { x, y } = el.getBoundingClientRect();
     const scrim = document.createElement("div");
     scrim.setAttribute("rel", rel_showImageAlt);
-    scrim.style.left = `${x}px`;
-    scrim.style.top = `${y}px`;
-    scrim.style.width = `${el.clientWidth}px`;
-    scrim.style.height = `${el.clientHeight}px`;
+    scrim.style.left = `${x.toString(10)}px`;
+    scrim.style.top = `${y.toString(10)}px`;
+    scrim.style.width = `${el.clientWidth.toString(10)}px`;
+    scrim.style.height = `${el.clientHeight.toString(10)}px`;
     scrim.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
     scrim.style.position = "absolute";
     scrim.style.zIndex = "9999";

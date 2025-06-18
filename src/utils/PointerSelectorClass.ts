@@ -11,11 +11,14 @@ export class PointerSelector {
   _pointerSelectorClassName = "phlffobkmklt";
   _pointerSelector: HTMLElement | undefined;
   _latestCoordinates: { x: number; y: number } = { x: 0, y: 0 };
-  _debounceTimer: number  | undefined = undefined;
+  _debounceTimer: number | undefined = undefined;
   private readonly _hoverHandler: ((e: HTMLElement) => void) | undefined;
   private readonly _clickHandler: ((e: HTMLElement) => boolean) | undefined;
 
-  constructor(clickHandler?: (e: HTMLElement) => boolean, hoverHandler?: (e: HTMLElement) => void) {
+  constructor(
+    readonly clickHandler?: (e: HTMLElement) => boolean,
+    hoverHandler?: (e: HTMLElement) => void,
+  ) {
     this._pointerSelectorClassName = randomString(16);
     this._clickHandler = clickHandler;
     this._hoverHandler = hoverHandler;
@@ -57,7 +60,9 @@ export class PointerSelector {
     } finally {
       if (remove) {
         document.getElementById(this._pointerSelectorClassName)?.removeEventListener("click", this.clickHandlerResolver);
-        document.getElementById(this._pointerSelectorClassName)?.removeEventListener("mouseover", this.pointerSelectorMouseEventForwarder);
+        document
+          .getElementById(this._pointerSelectorClassName)
+          ?.removeEventListener("mouseover", this.pointerSelectorMouseEventForwarder);
         document.getElementById(this._pointerSelectorClassName)?.remove();
       }
     }

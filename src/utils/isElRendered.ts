@@ -1,4 +1,3 @@
-
 function closestOther<T extends keyof HTMLElementTagNameMap>(el: HTMLElement | void, selector: T): HTMLElementTagNameMap[T] | null {
   if (!el) return null;
   const r = el?.closest(selector);

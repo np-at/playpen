@@ -1,7 +1,6 @@
 import { run } from "axe-core";
 import CreatePointerSelector from "../utils/PointerSelectorClass";
 
-
 // run(
 //   document,
 //   {
@@ -14,16 +13,18 @@ import CreatePointerSelector from "../utils/PointerSelectorClass";
 // ).then(console.log).catch(err=> {
 //   throw err;
 // });
-CreatePointerSelector((t)=>{
-  console.log("running on ", t)
+CreatePointerSelector((t) => {
+  console.log("running on ", t);
   run(t, {
     elementRef: true,
     rules: {
-      "color-contrast": {enabled: true}
+      "color-contrast": { enabled: true },
     },
-    reporter: 'v2',
-  }).then(console.log).catch(err=>{
-    throw err
-  });
+    reporter: "v2",
+  })
+    .then(console.log)
+    .catch((err: unknown) => {
+      throw err;
+    });
   return true;
-})
+});

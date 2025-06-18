@@ -1,6 +1,5 @@
 // stolen from https://codepen.io/stevef/pen/YLMqbo
 
-
 function TextSpacing(): void {
   const d = document;
   const id = "phltsbkmklt";

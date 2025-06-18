@@ -1,21 +1,21 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" >
     <title>Safari Oddities testing</title>
-</head>
-<body>
-<div class="row">
-    <a data-testid="a1" href="#t1">To focus visible</a>
-    <a data-testid="a2" href="#t2">To focus only</a>
-    <button data-testid="b1" id="b1" type="button">button</button>
-</div>
-<div class="row">
-    <h2 class="fv" data-testid="t1" id="t1" tabindex="0">Focus visible</h2>
-</div>
-<div class="row">
-    <h2 class="focus-only" data-testid="t2" id="t2" tabindex="-1">Focus only</h2>
-</div>
-<script src="_main.ts" type="module"></script>
-</body>
+  </head>
+  <body>
+    <div class="row">
+      <a data-testid="a1" href="#t1">To focus visible</a>
+      <a data-testid="a2" href="#t2">To focus only</a>
+      <button data-testid="b1" id="b1" type="button">button</button>
+    </div>
+    <div class="row">
+      <h2 class="fv" data-testid="t1" id="t1" tabindex="0">Focus visible</h2>
+    </div>
+    <div class="row">
+      <h2 class="focus-only" data-testid="t2" id="t2" tabindex="-1">Focus only</h2>
+    </div>
+    <script src="_main.ts" type="module"></script>
+  </body>
 </html>

@@ -1,4 +1,4 @@
-import {beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { levenshtein, levenshteinEditDistance } from "./diffAccName";
 import { randomString } from "./stringUtils.js";
 
@@ -15,7 +15,7 @@ describe("levenshtein perf testing", () => {
     }
   });
 
-  it("test levenshtein", {concurrent: false},() => {
+  it("test levenshtein", { concurrent: false }, () => {
     // START TEST2
     // prime cache
     for (let i = 0; i < 100; i++) {

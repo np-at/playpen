@@ -1,7 +1,3 @@
-
-"use strict";
-
-
 let useIDRefs = true;
 let hidePanels = false;
 let targetAndSourceCompilationReadable = "";

@@ -23,14 +23,14 @@ export function levenshtein(s: string, t: string): number {
     return n + m;
   }
   let x = 0;
-  let y:number;
-  let a:number;
-  let b:number;
-  let c:number;
-  let d:number;
-  let g:number;
-  let h:number;
-  let k:number;
+  let y: number;
+  let a: number;
+  let b: number;
+  let c: number;
+  let d: number;
+  let g: number;
+  let h: number;
+  let k: number;
   const p = new Array<number>(n);
   for (y = 0; y < n; ) {
     p[y] = ++y;

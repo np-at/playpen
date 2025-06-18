@@ -1,6 +1,5 @@
 import { drawBox } from "../utils/drawUtils";
 
-
 const dupBoxId = "dupIdBox";
 
 function makeDisplay(): HTMLElement {
@@ -8,8 +7,7 @@ function makeDisplay(): HTMLElement {
   if (existingDisplay) {
     existingDisplay.show();
     const wrapper: HTMLDivElement | null = existingDisplay.querySelector("div.content-wrapper");
-    if (!wrapper)
-      throw new Error("existing display's content wrapper not found")
+    if (!wrapper) throw new Error("existing display's content wrapper not found");
     wrapper.innerHTML = "";
     return wrapper;
   }
@@ -61,7 +59,6 @@ function makeCloseButton(display: HTMLDialogElement): HTMLButtonElement {
   return closeButton;
 }
 
-
 function findDuplicates(): Array<[string, Element[]]> {
   const ids = new Map<string, Element[]>();
   const all = document.querySelectorAll("[id]");
@@ -79,7 +76,6 @@ function findDuplicates(): Array<[string, Element[]]> {
 }
 
 function collectDuplicates(ds: HTMLElement): void {
-
   const duplicates = findDuplicates();
   if (duplicates.length === 0) {
     ds.innerText = "No duplicate IDs found";

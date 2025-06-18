@@ -166,12 +166,10 @@ function drawFocusTraceArrows(): void {
   // }
 }
 
-
 let selectionChangeTimer: number | undefined;
 let redrawTimer: number | undefined;
 
-
-  addBoundingStyle();
-  window.addEventListener("focusin", handleFocusChange, { passive: false });
-  window.addEventListener("scroll", redrawSelectionBoxes, { passive: false });
-  window.addEventListener("resize", redrawSelectionBoxes, { passive: false });
+addBoundingStyle();
+window.addEventListener("focusin", handleFocusChange, { passive: false });
+window.addEventListener("scroll", redrawSelectionBoxes, { passive: false });
+window.addEventListener("resize", redrawSelectionBoxes, { passive: false });
