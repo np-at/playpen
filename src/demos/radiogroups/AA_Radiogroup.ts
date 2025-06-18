@@ -137,12 +137,14 @@ class AA_Radiogroup {
     }
 
     if (flag) {
+      console.info("stopping propagation", event);
       event.stopPropagation();
       event.preventDefault();
     }
   }
 
   handleClick(event: MouseEvent) {
+    console.log("handling click on rb", event);
     if (event.currentTarget && event.currentTarget instanceof HTMLElement) this.setChecked(event.currentTarget);
   }
 

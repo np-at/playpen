@@ -1,241 +1,252 @@
 <!doctype html>
 <html lang="en" xmlns="http://www.w3.org/1999/html">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8"/>
     <title>Radiogroup testing</title>
-    <script defer type="module" src="RT_radiogroup.ts"></script>
-    <script defer type="module" src="AA_Radiogroup.ts"></script>
-    <link rel="stylesheet" href="../../global.css" />
+    <script defer src="RT_radiogroup.ts" type="module"></script>
+    <script defer src="AA_Radiogroup.ts" type="module"></script>
+    <link href="../../global.css" rel="stylesheet"/>
+    <script defer type="module">
+        "use strict"
+
+        document.body.addEventListener('keyup', function (ev) {
+            console.log("keyup", ev);
+        })
+        document.body.addEventListener('click', function (ev) {
+            console.log("click", ev);
+        })
+    </script>
     <style>
-      [role="radiogroup"] {
-        padding: 0;
-        margin: 0;
-        list-style: none;
-      }
+        [role="radiogroup"] {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
 
-      [role="radiogroup"]:focus {
-        outline: none;
-      }
+        [role="radiogroup"]:focus {
+            outline: none;
+        }
 
-      [role="radio"] {
-        padding: 4px 8px;
-        border: 0 solid transparent;
-        border-radius: 5px;
-        display: inline-block;
-        position: relative;
-        cursor: default;
-        outline: none;
-        color: var(--primary-text-color);
-      }
+        [role="radio"] {
+            padding: 4px 8px;
+            border: 0 solid transparent;
+            border-radius: 5px;
+            display: inline-block;
+            position: relative;
+            cursor: default;
+            outline: none;
+            color: var(--primary-text-color);
+        }
 
-      [role="radio"] + [role="radio"] {
-        margin-left: 1em;
-      }
+        [role="radio"] + [role="radio"] {
+            margin-left: 1em;
+        }
 
-      [role="radio"]::before {
-        position: relative;
-        top: 1px;
-        content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='14' width='14' style='forced-color-adjust: auto;'%3E%3Ccircle cx='7' cy='7' r='6' stroke='rgb(0, 90, 156)' stroke-width='2' fill-opacity='0' /%3E%3C/svg%3E");
-      }
+        [role="radio"]::before {
+            position: relative;
+            top: 1px;
+            content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='14' width='14' style='forced-color-adjust: auto;'%3E%3Ccircle cx='7' cy='7' r='6' stroke='rgb(0, 90, 156)' stroke-width='2' fill-opacity='0' /%3E%3C/svg%3E");
+        }
 
-      [role="radio"][aria-checked="true"]::before {
-        position: relative;
-        top: 1px;
-        content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='14' width='14' style='forced-color-adjust: auto;'%3E%3Ccircle cx='7' cy='7' r='6' stroke='rgb(0, 90, 156)' stroke-width='2' fill-opacity='0' /%3E%3Ccircle cx='7' cy='7' r='3' fill='rgb(0, 90, 156)' stroke-opacity='0' /%3E%3C/svg%3E");
-      }
+        [role="radio"][aria-checked="true"]::before {
+            position: relative;
+            top: 1px;
+            content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='14' width='14' style='forced-color-adjust: auto;'%3E%3Ccircle cx='7' cy='7' r='6' stroke='rgb(0, 90, 156)' stroke-width='2' fill-opacity='0' /%3E%3Ccircle cx='7' cy='7' r='3' fill='rgb(0, 90, 156)' stroke-opacity='0' /%3E%3C/svg%3E");
+        }
 
-      [role="radio"].focus,
-      [role="radio"]:hover {
-        padding: 2px 6px;
-        border: 2px solid #005a9c;
-        background-color: #def;
-        cursor: pointer;
-      }
+        [role="radio"].focus,
+        [role="radio"]:hover {
+            padding: 2px 6px;
+            border: 2px solid #005a9c;
+            background-color: #def;
+            cursor: pointer;
+        }
     </style>
-  </head>
-  <body>
-    <div class="row">
-      <div class="row">asdf</div>
-      <fieldset aria-label="okri">
+</head>
+<body>
+<div class="row">
+    <div class="row">asdf</div>
+    <fieldset aria-label="okri">
         <legend>grungi</legend>
-        <label> <input checked type="radio" value="test" />test1 </label>
-        <label> <input type="radio" value="test2" />test2 </label>
-      </fieldset>
-      <h2>Roving Tabindex</h2>
-      <fieldset id="rg1" role="radiogroup">
+        <label> <input checked name="aa" type="radio" value="test"/>test1 </label>
+        <label> <input name="aa" type="radio" value="test2"/>test2 </label>
+    </fieldset>
+    <h2>Roving Tabindex</h2>
+    <fieldset id="rg1" role="radiogroup">
         <legend class="visually-hidden" id="group_label_1">Pizza Crust</legend>
         <h3 aria-hidden="true">Pizza Crust</h3>
         <div aria-checked="false" role="radio" tabindex="0">Regular crust</div>
         <div aria-checked="false" role="radio" tabindex="-1">Deep dish</div>
         <div aria-checked="false" role="radio" tabindex="-1">Thin crust</div>
-      </fieldset>
+    </fieldset>
 
-      <div aria-labelledby="group_label_2" id="rg2" role="radiogroup">
+    <div aria-labelledby="group_label_2" id="rg2" role="radiogroup">
         <h3 id="group_label_2">Pizza Delivery</h3>
         <div aria-checked="false" role="radio" tabindex="0">Pickup</div>
 
         <div aria-checked="false" role="radio" tabindex="-1">Home Delivery</div>
 
         <div aria-checked="false" role="radio" tabindex="-1">Dine in</div>
-      </div>
     </div>
-    <script type="module">
-      /*
-       *   This content is licensed according to the W3C Software License at
-       *   https://www.w3.org/Consortium/Legal/2015/copyright-software-and-document
-       *
-       *   File:   radio.js
-       *
-       *   Desc:   Radio group widget that implements ARIA Authoring Practices
-       */
+</div>
+<script type="module">
+    /*
+     *   This content is licensed according to the W3C Software License at
+     *   https://www.w3.org/Consortium/Legal/2015/copyright-software-and-document
+     *
+     *   File:   radio.js
+     *
+     *   Desc:   Radio group widget that implements ARIA Authoring Practices
+     */
 
-      "use strict";
+    "use strict";
 
-      class RadioGroup {
+    class RadioGroup {
         constructor(groupNode) {
-          this.groupNode = groupNode;
+            this.groupNode = groupNode;
 
-          this.radioButtons = [];
+            this.radioButtons = [];
 
-          this.firstRadioButton = null;
-          this.lastRadioButton = null;
+            this.firstRadioButton = null;
+            this.lastRadioButton = null;
 
-          const rbs = this.groupNode.querySelectorAll("[role=radio]");
+            const rbs = this.groupNode.querySelectorAll("[role=radio]");
 
-          for (let i = 0; i < rbs.length; i++) {
-            const rb = rbs[i];
+            for (let i = 0; i < rbs.length; i++) {
+                const rb = rbs[i];
 
-            rb.tabIndex = -1;
-            rb.setAttribute("aria-checked", "false");
+                rb.tabIndex = -1;
+                rb.setAttribute("aria-checked", "false");
 
-            rb.addEventListener("keydown", this.handleKeydown.bind(this));
-            rb.addEventListener("click", this.handleClick.bind(this));
-            rb.addEventListener("focus", this.handleFocus.bind(this));
-            rb.addEventListener("blur", this.handleBlur.bind(this));
+                rb.addEventListener("keydown", this.handleKeydown.bind(this));
+                rb.addEventListener("click", this.handleClick.bind(this));
+                rb.addEventListener("focus", this.handleFocus.bind(this));
+                rb.addEventListener("blur", this.handleBlur.bind(this));
 
-            this.radioButtons.push(rb);
+                this.radioButtons.push(rb);
 
-            if (!this.firstRadioButton) {
-              this.firstRadioButton = rb;
+                if (!this.firstRadioButton) {
+                    this.firstRadioButton = rb;
+                }
+                this.lastRadioButton = rb;
             }
-            this.lastRadioButton = rb;
-          }
-          this.firstRadioButton.tabIndex = 0;
+            this.firstRadioButton.tabIndex = 0;
         }
 
         setChecked(currentItem) {
-          for (let i = 0; i < this.radioButtons.length; i++) {
-            const rb = this.radioButtons[i];
-            rb.setAttribute("aria-checked", "false");
-            rb.tabIndex = -1;
-          }
-          currentItem.setAttribute("aria-checked", "true");
-          currentItem.tabIndex = 0;
-          currentItem.focus();
+            for (let i = 0; i < this.radioButtons.length; i++) {
+                const rb = this.radioButtons[i];
+                rb.setAttribute("aria-checked", "false");
+                rb.tabIndex = -1;
+            }
+            currentItem.setAttribute("aria-checked", "true");
+            currentItem.tabIndex = 0;
+            currentItem.focus();
         }
 
         setCheckedToPreviousItem(currentItem) {
-          let index;
+            let index;
 
-          if (currentItem === this.firstRadioButton) {
-            this.setChecked(this.lastRadioButton);
-          } else {
-            index = this.radioButtons.indexOf(currentItem);
-            this.setChecked(this.radioButtons[index - 1]);
-          }
+            if (currentItem === this.firstRadioButton) {
+                this.setChecked(this.lastRadioButton);
+            } else {
+                index = this.radioButtons.indexOf(currentItem);
+                this.setChecked(this.radioButtons[index - 1]);
+            }
         }
 
         setCheckedToNextItem(currentItem) {
-          let index;
+            let index;
 
-          if (currentItem === this.lastRadioButton) {
-            this.setChecked(this.firstRadioButton);
-          } else {
-            index = this.radioButtons.indexOf(currentItem);
-            this.setChecked(this.radioButtons[index + 1]);
-          }
+            if (currentItem === this.lastRadioButton) {
+                this.setChecked(this.firstRadioButton);
+            } else {
+                index = this.radioButtons.indexOf(currentItem);
+                this.setChecked(this.radioButtons[index + 1]);
+            }
         }
 
         /* EVENT HANDLERS */
 
         handleKeydown(event) {
-          const tgt = event.currentTarget;
-          let flag = false;
+            const tgt = event.currentTarget;
+            let flag = false;
 
-          switch (event.key) {
-            case " ":
-              this.setChecked(tgt);
-              flag = true;
-              break;
+            switch (event.key) {
+                case " ":
+                    this.setChecked(tgt);
+                    flag = true;
+                    break;
 
-            case "Up":
-            case "ArrowUp":
-            case "Left":
-            case "ArrowLeft":
-              this.setCheckedToPreviousItem(tgt);
-              flag = true;
-              break;
+                case "Up":
+                case "ArrowUp":
+                case "Left":
+                case "ArrowLeft":
+                    this.setCheckedToPreviousItem(tgt);
+                    flag = true;
+                    break;
 
-            case "Down":
-            case "ArrowDown":
-            case "Right":
-            case "ArrowRight":
-              this.setCheckedToNextItem(tgt);
-              flag = true;
-              break;
+                case "Down":
+                case "ArrowDown":
+                case "Right":
+                case "ArrowRight":
+                    this.setCheckedToNextItem(tgt);
+                    flag = true;
+                    break;
 
-            default:
-              break;
-          }
+                default:
+                    break;
+            }
 
-          if (flag) {
-            event.stopPropagation();
-            event.preventDefault();
-          }
+            if (flag) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
         }
 
         handleClick(event) {
-          this.setChecked(event.currentTarget);
+            this.setChecked(event.currentTarget);
         }
 
         handleFocus(event) {
-          event.currentTarget.classList.add("focus");
+            event.currentTarget.classList.add("focus");
         }
 
         handleBlur(event) {
-          event.currentTarget.classList.remove("focus");
+            event.currentTarget.classList.remove("focus");
         }
-      }
-      const radios = document.querySelectorAll('[id^="rg"]');
-      for (let i = 0; i < radios.length; i++) {
-        new RadioGroup(radios[i]);
-      }
-    </script>
-    <div class="row">
-      <h2>Aria activedescendant</h2>
-      <h3 id="group_label_3">Pizza Crust</h3>
+    }
 
-      <fieldset
-        aria-activedescendant="rb11"
-        aria-labelledby="group_label_3"
-        class="radiogroup-activedescendant"
-        role="radiogroup"
-        tabindex="0"
-      >
+    const radios = document.querySelectorAll('[id^="rg"]');
+    for (let i = 0; i < radios.length; i++) {
+        new RadioGroup(radios[i]);
+    }
+</script>
+<div class="row">
+    <h2>Aria activedescendant</h2>
+    <h3 id="group_label_3">Pizza Crust</h3>
+
+    <fieldset
+            aria-labelledby="group_label_3"
+            class="radiogroup-activedescendant"
+            role="radiogroup"
+            tabindex="0"
+    >
         <div aria-checked="false" id="rb11" role="radio">Regular crust</div>
         <div aria-checked="false" id="rb12" role="radio">Deep dish</div>
         <div aria-checked="false" id="rb13" role="radio">Thin crust</div>
-      </fieldset>
+    </fieldset>
 
-      <h3 id="group_label_4">Pizza Delivery</h3>
+    <h3 id="group_label_4">Pizza Delivery</h3>
 
-      <ul aria-activedescendant="rb21" aria-labelledby="group_label_4" class="radiogroup-activedescendant" role="group" tabindex="0">
+    <ul aria-labelledby="group_label_4" class="radiogroup-activedescendant" role="group"
+        tabindex="0">
         <li aria-checked="false" id="rb21" role="radio">Pick up</li>
         <li aria-checked="false" id="rb22" role="radio">Home Delivery</li>
         <li aria-checked="false" id="rb23" role="radio">Dine in Restaurant</li>
-      </ul>
-    </div>
-    <script type="module"></script>
-    <div class="row">asdf</div>
-  </body>
+    </ul>
+</div>
+<script type="module"></script>
+<div class="row">asdf</div>
+</body>
 </html>
