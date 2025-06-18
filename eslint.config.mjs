@@ -23,7 +23,7 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "warn",
       "@typescript-eslint/prefer-readonly": "error",
 
-      "require-atomic-updates":"error"
+      "require-atomic-updates": "error",
     },
   },
   {
@@ -48,7 +48,6 @@ export default tseslint.config(
       "@html-eslint/no-trailing-spaces": "off",
       "@html-eslint/quotes": "off",
       "@html-eslint/sort-attrs": "off",
-
 
       "@html-eslint/no-abstract-roles": "error",
       "@html-eslint/no-heading-inside-button": "error",

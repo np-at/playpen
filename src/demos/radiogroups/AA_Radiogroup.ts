@@ -1,11 +1,11 @@
 /*
-      *   This content is licensed according to the W3C Software License at
-      *   https://www.w3.org/Consortium/Legal/2015/copyright-software-and-document
-      *
-      *   File:  radio-activedescendant.js
-      *
-      *   Desc:  Radio group widget using aria-activedescendant that implements ARIA Authoring Practices
-      */
+ *   This content is licensed according to the W3C Software License at
+ *   https://www.w3.org/Consortium/Legal/2015/copyright-software-and-document
+ *
+ *   File:  radio-activedescendant.js
+ *
+ *   Desc:  Radio group widget using aria-activedescendant that implements ARIA Authoring Practices
+ */
 
 "use strict";
 
@@ -19,11 +19,8 @@ class AA_Radiogroup {
 
     this.radioButtons = [];
 
-
-
     this.radioButtons = [];
     const rbs: HTMLElement[] = Array.from(this.groupNode.querySelectorAll("[role=radio]"));
-
 
     this.groupNode.addEventListener("keydown", this.handleKeydown.bind(this));
     this.groupNode.addEventListener("focus", this.handleFocus.bind(this));
@@ -54,7 +51,7 @@ class AA_Radiogroup {
     );
   }
 
-  setChecked(currentItem:HTMLElement) {
+  setChecked(currentItem: HTMLElement) {
     for (let i = 0; i < this.radioButtons.length; i++) {
       const rb = this.radioButtons[i];
       rb.setAttribute("aria-checked", "false");
@@ -69,7 +66,7 @@ class AA_Radiogroup {
     this.groupNode.focus();
   }
 
-  setCheckedToPreviousItem(currentItem:HTMLElement) {
+  setCheckedToPreviousItem(currentItem: HTMLElement) {
     let index;
 
     if (currentItem === this.firstRadioButton) {
@@ -80,7 +77,7 @@ class AA_Radiogroup {
     }
   }
 
-  setCheckedToNextItem(currentItem:HTMLElement) {
+  setCheckedToNextItem(currentItem: HTMLElement) {
     let index;
 
     if (currentItem === this.lastRadioButton) {
@@ -109,7 +106,7 @@ class AA_Radiogroup {
 
   // Event Handlers
 
-  handleKeydown(event:KeyboardEvent) {
+  handleKeydown(event: KeyboardEvent) {
     let flag = false;
 
     const currentItem = this.getCurrentRadioButton();
@@ -146,8 +143,7 @@ class AA_Radiogroup {
   }
 
   handleClick(event: MouseEvent) {
-    if (event.currentTarget && event.currentTarget instanceof HTMLElement)
-      this.setChecked(event.currentTarget);
+    if (event.currentTarget && event.currentTarget instanceof HTMLElement) this.setChecked(event.currentTarget);
   }
 
   handleFocus() {

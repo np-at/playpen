@@ -1,6 +1,5 @@
 @import url("./reset.css");
 
-
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -116,6 +115,7 @@ button:focus-visible {
   display: inline-block;
 }
 
-li,ul {
+li,
+ul {
   list-style: none;
 }

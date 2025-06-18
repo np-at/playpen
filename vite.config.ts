@@ -88,7 +88,6 @@ export default {
   test: {
     projects: [
       {
-        extends: "./vite.config.ts",
         test: {
           name: "browser-tests",
           include: ["**/*.test.ts"],
@@ -105,7 +104,6 @@ export default {
         },
       },
       {
-        extends: "./vite.config.ts",
         test: {
           includeTaskLocation: true,
           name: "node-tests",
