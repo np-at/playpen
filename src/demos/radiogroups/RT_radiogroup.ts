@@ -148,7 +148,7 @@ export class RT_RadioGroup {
   }
 }
 
-const radios = document.querySelectorAll('[id^="rg"]');
+const radios = document.querySelectorAll('.radiogroup-rovingtabindex');
 for (let i = 0; i < radios.length; i++) {
   new RT_RadioGroup(radios[i] as HTMLElement);
 }

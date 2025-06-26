@@ -9,7 +9,7 @@
 
 "use strict";
 
-class AA_Radiogroup {
+export class AA_Radiogroup {
   groupNode: HTMLElement;
   radioButtons: HTMLElement[];
   firstRadioButton: HTMLElement;
