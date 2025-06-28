@@ -32,13 +32,12 @@
     "prettier": "^3.6.1",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.35.0",
-    "vite": "^6.3.5",
-    "vite-plugin-inspect": "^11.2.0",
+    "vite": "^7.0.0",
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@donedeal0/superdiff": "^3.1.2",
     "aria-api": "^0.8.0",
-    "axe-core": "^4.10.3",
-    "@donedeal0/superdiff": "^3.1.2"
+    "axe-core": "^4.10.3"
   }
 }

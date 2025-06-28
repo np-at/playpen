@@ -68,7 +68,7 @@ async function compile(inputFile: string, minify: boolean, isDebug = false) {
   return formatAsBookmarklet(code.text, true);
 }
 
-export default function inlineTS(opts = {}): Plugin {
+export default function inlineTS(opts = {}): Plugin<void> {
   const options = Object.assign({}, defaults, opts);
   const filter = createFilter(options.include, options.exclude);
   const resolved: { [key: string]: { content: string | null } } = {};

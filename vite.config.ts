@@ -3,8 +3,7 @@ import { relative, resolve } from "node:path";
 import { readdirSync } from "node:fs";
 import type { ViteUserConfig } from "vitest/config";
 import inlineTS from "./InlineTSPlugin";
-import Inspect from "vite-plugin-inspect";
-import type { Plugin } from "vite";
+import type { Plugin, PluginOption } from "vite";
 
 const SOURCE_ROOT = "src/";
 
@@ -45,7 +44,7 @@ const htmlFiles = findFiles(/.*\.html$/, { startDir: __dirname }).reduce<Record<
 }, {});
 
 // console.warn(htmlFiles);
-function siteMapPlugin(): Plugin {
+function siteMapPlugin(): Plugin<void> {
   const virtualModuleId = "virtual:site-map";
   const resolvedVirtualModuleId = "\0" + virtualModuleId;
 
@@ -84,7 +83,7 @@ export default {
   server: {
     port: 5922,
   },
-  plugins: [siteMapPlugin(), Inspect(), inlineTS()],
+  plugins: [siteMapPlugin(), inlineTS()],
   test: {
     projects: [
       {
