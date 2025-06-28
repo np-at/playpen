@@ -18,8 +18,13 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-}
 
+    --focus-border-color: #fff;
+}
+*:focus-visible {
+    outline: 2px solid var(--focus-border-color, #000);
+    outline-offset: 2px;
+}
 a {
     font-weight: 500;
     color: #646cff;
@@ -98,6 +103,7 @@ button:focus-visible {
     :root {
         color: #213547;
         background-color: #ffffff;
+
     }
 
     a:hover {
