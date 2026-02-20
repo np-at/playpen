@@ -2,8 +2,8 @@
 import { relative, resolve } from "node:path";
 import { readdirSync } from "node:fs";
 import type { ViteUserConfig } from "vitest/config";
-import inlineTS from "./InlineTSPlugin";
-import type { Plugin, PluginOption } from "vite";
+import inlineTS from "./vite_plugins/InlineTSPlugin.js";
+import type { Plugin } from "vite";
 
 const SOURCE_ROOT = "src/";
 
@@ -68,7 +68,11 @@ export default {
   root: SOURCE_ROOT,
   css: {
     transformer: "postcss",
-    modules: {},
+    preprocessorOptions: {
+      scss: {
+        silenceDeprecations: ["import", "color-functions", "global-builtin", "if-function"],
+      },
+    },
   },
   build: {
     target: "esnext",

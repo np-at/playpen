@@ -135,3 +135,18 @@ li,
 ul {
     list-style: none;
 }
+
+
+.p-table {
+    display: table;
+    width:  100%;
+}
+.p-row {
+    display: table-row;
+    width: 100%;
+}
+.p-cell {
+    display: table-cell;
+    padding: 0.5em;
+    border: 1px solid var(--thin-border-color);
+}

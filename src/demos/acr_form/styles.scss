@@ -1,0 +1,42 @@
+@import "bootstrap/scss/bootstrap.scss";
+@import "bootstrap-icons";
+
+.req {
+    color: #cd2727;
+}
+
+table {
+    width: 100%;
+}
+
+table, th, td {
+    border: 1px solid;
+    border-collapse: collapse;
+}
+
+th {
+    text-align: center;
+    vertical-align: middle;
+}
+
+td {
+    text-align: center;
+    vertical-align: middle;
+}
+
+tr:nth-child(even) {background: #d4ebf2}
+tr:nth-child(odd) {background: #FFF}
+
+.flexContainer {
+    display:flex;
+    justify-content: space-between;
+}
+
+.form-check-input {
+    border-color: #000000;
+}
+
+input[type='file'] {
+    width: 100px;
+    color: transparent;
+}

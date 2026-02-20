@@ -118,7 +118,7 @@ document.body.appendChild(container);
 function updateHeight(): void {
   if (!container) return;
   container.style.height = "0px";
-  container.style.height = `${doc.scrollingElement?.scrollHeight ?? 0}px`;
+  container.style.height = `${(doc.scrollingElement?.scrollHeight ?? 0).toString(10)}px`;
 }
 
 interface OutlineItem {

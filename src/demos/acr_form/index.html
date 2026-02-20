@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>ACR Editor Demo</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+  <script defer type="module" src="./index.ts"></script>
+<!--  <link href="/node_modules/bootstrap/dist/css/bootstrap.css" rel="stylesheet" >-->
+
+<!--  <link rel="stylesheet" href="/node_modules/bootstrap-icons/font/bootstrap-icons.css" >-->
+
+<!--  <link rel="stylesheet" href="styles.scss" >-->
+
+</head>
+<body>
+<h1>ACR Editor Demo</h1>
+<p>The purpose of this document is to create a sample table that can be used to create and edit ACRs. This is based on the <a href="https://section508coordinators.github.io/SCRT/">Section 508 Compliance Reporting Tool (SCRT)</a>.</p>
+<div style="display: flex;">
+
+  <div id="productSection" style="width: 50%">
+    <h2>
+      <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#disclosure" aria-expanded="true" aria-controls="disclosure">Product Information <span aria-hidden="true">+/-</span></button>
+    </h2>
+    <div class="show" id="disclosure">
+      <p>"<span class="req">*</span>" indicates a required field.</p>
+      <form style="width: 70%; border: 1px solid #E8E8E8; border-radius: 5px; padding: 10px; margin-left: 10px;">
+        <div class="form-group">
+          <label for="productName">Product Name: <span class="req">*</span></label>
+          <input type="text" id="productName" class="form-control" aria-required="true">
+        </div>
+        <div class="form-group">
+          <label for="productVersion">Product Version: <span class="req">*</span></label>
+          <input type="text" id="productVersion" class="form-control" aria-required="true">
+        </div>
+        <div class="form-group">
+          <label for="productOwner">Product Owner/Vendor: <span class="req">*</span></label>
+          <input type="text" id="productOwner" class="form-control" aria-required="true">
+        </div>
+        <div class="form-group">
+          <label for="productType">Product Type: <span class="req">*</span></label>
+          <select id="productType" class="form-select" aria-required="true">
+            <option>Custom developed web page</option>
+            <option>COTS</option>
+            <option>Customization of COTS product</option>
+            <option>GOTS Application</option>
+            <option>Software</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="productLocation">Location/URL: <span class="req">*</span></label>
+          <input type="text" id="productLocation" class="form-control" aria-required="true">
+        </div>
+        <div class="form-group">
+          <label for="productDescription">Product Description: <span class="req">*</span></label>
+          <input type="text" id="producDescription" class="form-control" aria-required="true">
+        </div>
+        <div class="form-group">
+          <label for="productNotes">Notes: </label>
+          <input type="text" id="productNotes" class="form-control">
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="testingInfoSection" style="width: 50%;">
+    <h2>
+      <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#disclosure2" aria-expanded="true" aria-controls="disclosure">Testing Information <span aria-hidden="true">+/-</span></button>
+    </h2>
+    <div class="show" id="disclosure2">
+      <p>"<span class="req">*</span>" indicates a required field.</p>
+      <form style="width: 70%; border: 1px solid #E8E8E8; border-radius: 5px; padding: 10px; margin-left: 10px;">
+        <div class="form-group">
+          <label for="testedby">Tested By: <span class="req">*</span></label>
+          <input type="text" id="testedby" class="form-control" aria-required="true">
+        </div>
+        <div class="form-group">
+          <fieldset>
+            <legend>Browser(s) Used: <span class="req">*</span></legend>
+            <div class="flexContainer">
+              <label for="firefox" id="firefoxLabel">Firefox</label>
+              <input type="checkbox" class="form-check-input" id="firefox" />
+            </div>
+            <div class="flexContainer">
+              <label for="chrome">Chrome</label>
+              <input type="checkbox" class="form-check-input" id="chrome" />
+            </div>
+            <div class="flexContainer">
+              <label for="edge">Edge</label>
+              <input type="checkbox" class="form-check-input" id="edge" />
+            </div>
+            <div class="flexContainer">
+              <label for="ie">Internet Explorer</label>
+              <input type="checkbox" class="form-check-input" id="ie" />
+            </div>
+            <div class="flexContainer">
+              <label for="safari">Safari</label>
+              <input type="checkbox" class="form-check-input" id="safari" />
+            </div>
+            <div class="flexContainer">
+              <label for="other">Other</label>
+              <input type="checkbox" class="form-check-input" id="other" onclick="displayOther()" >
+            </div>
+            <span id="otherBrowserField" style="display: none;">
+									<i class="bi bi-arrow-return-right"></i>
+									<input type="text" id="otherText" aria-label="Other Browser information" />
+								</span>
+          </fieldset>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<div style="overflow-x:auto;">
+  <h2>Manual Testing Results</h2>
+  <p><strong>Note: </strong>&quot;Test 5.E is no longer required as of the updated Section 508 ICT Testing Baseline for Web, version 3.1
+    (published April 1, 2024).&quot; - Per the Section 508 Conformance Test Process.</p>
+  <table id="myTable">
+    <thead>
+    <tr>
+      <th id="col1header" style="width: 4%;">Issue Number</th>
+      <th id="col2header" style="width: 10%;">Test Name</th>
+      <th id="col3header">Test ID</th>
+      <th id="col4header" style="width: 15%;">Test Condition</th>
+      <th id="col5header" style="width: 10%;">Test Result</th>
+      <th id="col6header">Tester Comments</th>
+      <th id="col7header">Location/Screen</th>
+      <th id="col8header" style="width: 5%;">Global Issue</th>
+      <th id="col9header" style="width: 8%;">Screenshot</th>
+      <th id="col10header">Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <th scope="row" id="rownum1">01</th>
+      <td>Alt-version-conformant</td>
+      <td>1.A</td>
+      <td>The identified version passes all applicable Test Conditions in this test process.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum1">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum1"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum1"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum1">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" id="upload_screenshot" accept="image/*" >
+        <img src="" id="screenshot_preview" class="screenshot" alt="Screenshot preview"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum2">02</th>
+      <td>Alt-version-equivalent</td>
+      <td>1.B</td>
+      <td>The identified version is up-to-date with the same information and functionality.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum2">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum2"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum2"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum2">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum3">03</th>
+      <td>Alt-version-access</td>
+      <td>1.C</td>
+      <td>The mechanism to reach the accessible equivalent version from the non-conforming page is accessible.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum3">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum3"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum3"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum3">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum4">04</th>
+      <td>Non-interference</td>
+      <td>1.D</td>
+      <td>Content in the non-conforming version(s) meets <strong><a href="https://www.w3.org/TR/UNDERSTANDING-WCAG20/conformance.html#uc-conformance-requirements-head">Conformance Requirement 5</a></strong>.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum4">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum4"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum4"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum4">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum5">05</th>
+      <td>1.4.2-Audio-control</td>
+      <td>2.A</td>
+      <td>The user can pause, stop, or control the volume of audio content that plays automatically.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum5">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum5"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum5"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum5">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum6">06</th>
+      <td>2.2.2-Blinking-moving-scrolling</td>
+      <td>2.B</td>
+      <td>The user can pause, stop, or hide moving, blinking, or scrolling content.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum6">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum6"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum6"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum6">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum7">07</th>
+      <td>2.2.2-Auto-updating</td>
+      <td>2.C</td>
+      <td>The user can pause, stop, hide, or control the frequency of automatically updating content.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum7">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum7"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum7"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum7">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum8">08</th>
+      <td>4.1.2-change-notify-auto</td>
+      <td>2.D</td>
+      <td>The page provides notification of each automatic update/change in content.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum8">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum8"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum8"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum8">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum9">09</th>
+      <td>2.3.1-flashing</td>
+      <td>3.A</td>
+      <td>Web pages do not contain content that flashes more than three times in a one second period.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum9">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum9"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum9"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum9">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum10">10</th>
+      <td>2.1.1-keyboard-access</td>
+      <td>4.A</td>
+      <td>All functionality can be accessed and executed using only the keyboard.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum10">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum10"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum10"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum10">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum11">11</th>
+      <td>2.1.1-no-keystroke-timing</td>
+      <td>4.B</td>
+      <td>Individual keystrokes do not require specific timings for activation of functionality.s</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum11">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum11"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum11"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum11">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum12">12</th>
+      <td>2.1.2-no-keyboard-trap</td>
+      <td>4.C</td>
+      <td>There is no keyboard trap.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum12">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum12"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum12"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum12">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum13">13</th>
+      <td>2.4.7-focus-visible</td>
+      <td>4.D</td>
+      <td>A visible indication of focus is provided when focus is on the interface component.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum13">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum13"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum13"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum13">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum14">14</th>
+      <td>3.2.1-on-focus</td>
+      <td>4.E</td>
+      <td>When an interface component receives focus, it does not initiate an unexpected change of context.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum14">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum14"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum14"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum14">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum15">15</th>
+      <td>2.4.3-focus-order-meaning</td>
+      <td>4.F</td>
+      <td>The focus order preserves the meaning and operability of the web page.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum15">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum15"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum15"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum15">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum16">16</th>
+      <td>3.3.2-label-provided</td>
+      <td>5.A</td>
+      <td>Visual labels or instructions are provided for form elements.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum16">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum16"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum16"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum16">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum17">17</th>
+      <td>2.4.6-label-descriptive</td>
+      <td>5.B</td>
+      <td>Each visual form label is sufficiently descriptive.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum17">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum17"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum17"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum17">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum18">18</th>
+      <td>1.3.1-programmatic-label</td>
+      <td>5.C</td>
+      <td>The combination of the accessible name, accessible description, and other programmatic associations (e.g., table column and/or row associations) describes each input field and includes all relevant instructions and cues (textual and graphical)</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum18">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum18"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum18"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum18">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum19">19</th>
+      <td>3.2.2-on-input</td>
+      <td>5.D</td>
+      <td>Changing field values/selections (e.g., entering data in a text field, changing a radio button section) does NOT initiate and unexpected change of context.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum19">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum19"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum19"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum19">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+
+    <tr>
+      <th scope="row" id="rownum20">20</th>
+      <td>3.3.1-error-identification</td>
+      <td>5.F</td>
+      <td>The item in error is identified in text and sufficiently described to the user in text.</td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col5header rownum20">
+          <option>Pass</option>
+          <option>Fail</option>
+          <option>Does Not Apply</option>
+        </select>
+      </td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col6header rownum20"></textarea></td>
+      <td><textarea class="form-control border border-dark" aria-labeledby="col7header rownum20"></textarea></td>
+      <td>
+        <select class="form-select border border-dark" aria-labeledby="col8header rownum20">
+          <option>Yes</option>
+          <option>No</option>
+        </select>
+      </td>
+      <td>
+        <input type="file" accept="image/*" data-input-action="load-screenshot">
+        <img class="screenshot"/>
+      </td>
+      <td>
+        <button type="button" class="btn btn-success add">Add Child Row</button>
+        <button type="button" class="btn btn-danger delete">Delete This Row</button>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+<label for="editor">Sample Text Area With Editor</label><br />
+<textarea name="editor" id="editor" rows="10" cols="80"></textarea>
+<h2>To Do</h2>
+<ul>
+  <li><strike>Bootstrap</strike> &#10004;</li>
+  <li><strike>Add Disclosure widgets for sections</strike> &#10004;</li>
+  <li>Add functionality for adding and removing table rows
+    <ul>
+      <li>Add/Remove now works. Need to update so that the default presented rows are static and only newly added rows can be deleted.</li>
+    </ul>
+  </li>
+  <li>
+    <strike>Add a WYSIWYG editor for text areas</strike> &#x274c;
+    <ul>
+      <li>Deciding against a WYSIWYG editor and opting for Markdown support instead. It's cleaner and more accessible.</li>
+    </ul>
+  </li>
+  <li><strike>Add ability to upload screenshots</strike> &#10004;
+    <ul>
+      <li>Add ability to open the screenshots in a dialog to view the larger image</li>
+    </ul>
+  </li>
+  <li>Add markdown support for formatting notes</li>
+  <li>Add some sort of versioning so that, once delivered, the report is read-only but recipients can add revision notes.</li>
+</ul>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Screenshot</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="modal-image">
+          <img src="" alt="screenshot" style="position: relative; width: 100%;"/>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function displayOther() {
+    // Get the checkbox
+    var checkBox = document.getElementById("other");
+    // Get the output text
+    var text = document.getElementById("otherBrowserField");
+
+    // If the checkbox is checked, display the text field
+    if (checkBox.checked == true){
+      text.style.display = "block";
+    } else {
+      text.style.display = "none";
+    }
+  }
+</script>
+<script src="./loadFile.ts" type="module">
+  // function loadFile(event: InputEvent) {
+  //   const btn = event.target;
+  //   if (!btn || !(btn instanceof HTMLInputElement)) return;
+  //   const screenshot = btn.nextElementSibling;
+  //   assert(screenshot && screenshot instanceof HTMLImageElement, "screenshot element should be next sibling of the input");
+  //   assert(btn.files && btn.files.length > 0, "no file selected");
+  //   const modalbtn = document.createElement("button");
+  //   const parentElement = screenshot.parentNode;
+  //   assert(parentElement, "screenshot should have a parent element");
+  //   modalbtn.setAttribute("class", "btn");
+  //   modalbtn.setAttribute("data-bs-toggle", "modal");
+  //   modalbtn.setAttribute("data-bs-target", "#exampleModal");
+  //
+  //   screenshot.src = URL.createObjectURL(btn.files[0]);
+  //   screenshot.alt = "issue screenshot";
+  //   screenshot.style = "border: 1px solid black; width: 40px;";
+  //
+  //   // set the wrapper as child (instead of the element)
+  //   parentElement.replaceChild(modalbtn, screenshot);
+  //   // set element as child of wrapper
+  //   modalbtn.appendChild(screenshot);
+  //   modalbtn.addEventListener("click", () => {
+  //     const modalScreenshot = document.getElementById("modal-image img");
+  //     // assert(modalimg, "modal image element should be present in the document");
+  //     // const modalScreenshot = modalimg.querySelector("img");
+  //     assert(modalScreenshot, "modal image element should have an img child");
+  //     modalScreenshot.setAttribute("src", screenshot.src);
+  //   });
+  //   // const modalimg = document.getElementById("modal-image");
+  //   // assert(modalimg, "modal image element should be present in the document");
+  //   // const modalscreenshot = document.createElement("img");
+  //   // modalscreenshot.setAttribute("src", screenshot.src);
+  //   // modalscreenshot.setAttribute("alt", "screenshot");
+  //   // modalscreenshot.setAttribute("style", "position: relative; width: 100%;");
+  //
+  //   // modalimg.appendChild(modalscreenshot);
+  //
+  //   /*screenshot.onload = function() {
+  // URL.revokeObjectURL(screenshot.src) // free memory
+  // }*/
+  // }
+
+</script>
+<!--<script>-->
+<!--  var loadFile = function(event) {-->
+<!--    var btn = event.target;-->
+<!--    var screenshot = btn.nextElementSibling;-->
+<!--    var modalbtn = document.createElement("button");-->
+<!--    var parentElement = screenshot.parentNode;-->
+
+<!--    modalbtn.setAttribute("class", "btn");-->
+<!--    modalbtn.setAttribute("data-bs-toggle", "modal");-->
+<!--    modalbtn.setAttribute("data-bs-target", "#exampleModal");-->
+
+<!--    screenshot.src = URL.createObjectURL(event.target.files[0]);-->
+<!--    screenshot.alt = 'issue screenshot';-->
+<!--    screenshot.style = 'border: 1px solid black; width: 40px;'-->
+
+<!--    // set the wrapper as child (instead of the element)-->
+<!--    parentElement.replaceChild(modalbtn, screenshot);-->
+<!--    // set element as child of wrapper-->
+<!--    modalbtn.appendChild(screenshot);-->
+
+<!--    var modalimg = document.getElementById('modal-image');-->
+<!--    var modalscreenshot = document.createElement("img");-->
+<!--    modalscreenshot.setAttribute("src", screenshot.src)-->
+<!--    modalscreenshot.setAttribute("alt", "screenshot")-->
+<!--    modalscreenshot.setAttribute("style", "position: relative; width: 100%;")-->
+
+<!--    modalimg.appendChild(modalscreenshot);-->
+
+<!--    /*screenshot.onload = function() {-->
+<!--  URL.revokeObjectURL(screenshot.src) // free memory-->
+<!--}*/-->
+<!--  };-->
+<!--</script>-->
+<!--<script src="/node_modules/bootstrap/js/index.esm.js" type="module"></script>-->
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>-->
+</body>
+</html>
