@@ -8,7 +8,7 @@ export function setupHandleFileSelect() {
     loadFile(event);
   })
 }
-export function loadFile(event: InputEvent) {
+export function loadFile(event: Event) {
   const btn = event.target;
   if (!btn || !(btn instanceof HTMLInputElement)) return;
   const screenshot = btn.nextElementSibling;

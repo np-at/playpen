@@ -3,6 +3,7 @@ import { relative, resolve } from "node:path";
 import { readdirSync } from "node:fs";
 import type { ViteUserConfig } from "vitest/config";
 import inlineTS from "./vite_plugins/InlineTSPlugin.js";
+import {playwright} from "@vitest/browser-playwright"
 import type { Plugin } from "vite";
 
 const SOURCE_ROOT = "src/";
@@ -97,7 +98,7 @@ export default {
 
           browser: {
             instances: [{ browser: "chromium" }],
-            provider: "playwright",
+            provider: playwright(),
             enabled: true,
             headless: true,
             api: {

@@ -1,16 +1,17 @@
 import { type Static, Type } from "typebox";
 import { Compile } from "typebox/compile";
 
-export const TestName = Type.Enum({
-  "Keyboard Navigation": "Keyboard Navigation",
-  "Screen Reader": "Screen Reader",
-  });
+// export const TestName = Type.Enum({
+//   "Keyboard Navigation": "Keyboard Navigation",
+//   "Screen Reader": "Screen Reader",
+// });
+export const TestName = Type.String();
 export const TestResult = Type.Enum({
   Pass: "Pass",
   Fail: "Fail",
   "Does Not Apply": "Does Not Apply",
   "Not Tested": "Not Tested",
-})
+});
 const TestingInformationSchema = Type.Object({
   tested_by: Type.String(),
   browsers_used: Type.Array(Type.String()),
@@ -35,6 +36,7 @@ const TestFindingSchema = Type.Object({
   global_issue: Type.Boolean(),
   screenshot: Type.Optional(Type.String()),
 });
+export type TestFinding = Static<typeof TestFindingSchema>;
 
 const ACRFormStateSchema = Type.Object({
   findings: Type.Array(TestFindingSchema),
@@ -72,6 +74,9 @@ export class ACRFormState {
     this._product_info = value;
     this.save();
   }
+
+  private _findings: Static<typeof TestFindingSchema>[] = [];
+
   public get findings(): Static<typeof TestFindingSchema>[] {
     if (!this.initialized) {
       this.load();
@@ -84,7 +89,7 @@ export class ACRFormState {
     this._findings = value;
     this.save();
   }
-  private _findings: Static<typeof TestFindingSchema>[] = [];
+
   public save() {
     const data = {
       findings: this._findings,
