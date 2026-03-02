@@ -75,14 +75,26 @@ export default function inlineTS(opts = {}): Plugin<void> {
 
   return {
     name: "inlineTS",
-    resolveId(source, importer) {
-      if (source.indexOf("ts:") === -1) {
+    resolveId(source, importer, opts) {
+      // if (source.includes('_bookmarklets')) {
+      //   console.log(`${source} since type is ${JSON.stringify(opts)}`);
+      //
+      // }
+      // if (!opts.attributes.inline) {
+      //   // console.log(`skipping ${source} since type is ${JSON.stringify(opts)}`);
+      //   return null;
+      // }
+      if (!source.endsWith('?inlineTS')) {
         return null;
       }
-      if (!source.startsWith("ts:")) {
-        return null;
-      }
-      const _src = source.slice(3);
+
+      // if (source.indexOf("ts:") === -1) {
+      //   return null;
+      // }
+      // if (!source.startsWith("ts:")) {
+      //   return null;
+      // }
+      const _src = source.slice(0,source.length - '?inlineTS'.length);
 
       if (!_src.startsWith(".")) {
         resolved[_src] = { content: "" };

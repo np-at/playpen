@@ -4,7 +4,8 @@ import { readdirSync } from "node:fs";
 import type { ViteUserConfig } from "vitest/config";
 import inlineTS from "./vite_plugins/InlineTSPlugin.js";
 import {playwright} from "@vitest/browser-playwright"
-import type { Plugin } from "vite";
+import  { type Plugin } from "vite";
+
 
 const SOURCE_ROOT = "src/";
 
@@ -23,7 +24,7 @@ function findFiles(matchRegex: RegExp | RegExp[], opts?: { startDir: string; ign
       matches.push(...findFiles(matchRegex, { ignore: ignoreRE, startDir: filePath }));
     } else {
       if (_matchRE.some((re) => re.test(file.name))) {
-        console.log(`adding ${filePath}`);
+        // console.log(`adding ${filePath}`);
         matches.push(filePath);
       }
     }
@@ -31,7 +32,7 @@ function findFiles(matchRegex: RegExp | RegExp[], opts?: { startDir: string; ign
   return matches;
 }
 
-const htmlFiles = findFiles(/.*\.html$/, { startDir: __dirname }).reduce<Record<string, string>>((prev, x) => {
+export const htmlFiles = findFiles(/.*\.html$/, { startDir: __dirname }).reduce<Record<string, string>>((prev, x) => {
   const key = relative(SOURCE_ROOT, x);
   // if (basename(key, ".html") === "index") {
   //   key = dirname(key);

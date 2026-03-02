@@ -1,54 +1,56 @@
+import { assert } from "./utils/assert.ts";
 import { short_uuid } from "./utils/stringUtils.ts";
+import { htmlFiles } from "virtual:site-map";
 
-void import("ts:./_bookmarklets/fcs.ts").then((x) => {
+void import("./_bookmarklets/fcs.ts?inlineTS").then((x) => {
   makeLink(x.default, "fcs");
 });
-void import("ts:./_bookmarklets/Axify.ts").then((x) => {
+void import("./_bookmarklets/Axify.ts?inlineTS").then((x) => {
   makeLink(x.default, "Axify");
 });
-void import("ts:./_bookmarklets/AxifyTargeted.ts").then((x) => {
+void import("./_bookmarklets/AxifyTargeted.ts?inlineTS").then((x) => {
   makeLink(x.default, "AxifyTargeted");
 });
-void import("ts:./_bookmarklets/ForceFocusOutline.ts").then((x) => {
+void import("./_bookmarklets/ForceFocusOutline.ts?inlineTS").then((x) => {
   makeLink(x.default, "ForceFocusOutline");
 });
-void import("ts:./_bookmarklets/TextSpacing.ts").then((x) => {
+void import("./_bookmarklets/TextSpacing.ts?inlineTS").then((x) => {
   makeLink(x.default, "TextSpacing");
 });
-void import("ts:./_bookmarklets/MonitorAriaLive.ts").then((x) => {
+void import("./_bookmarklets/MonitorAriaLive.ts?inlineTS").then((x) => {
   makeLink(x.default, "AriaLiveObserver");
 });
-void import("ts:./_bookmarklets/showHeadings.ts").then((x) => {
+void import("./_bookmarklets/showHeadings.ts?inlineTS").then((x) => {
   makeLink(x.default, "ShowHeadings");
 });
-void import("ts:./_bookmarklets/FindDuplicateIds.ts").then((x) => {
+void import("./_bookmarklets/FindDuplicateIds.ts?inlineTS").then((x) => {
   makeLink(x.default, "FindDuplicateIds");
 });
-void import("ts:./_bookmarklets/HoverTest.ts").then((x) => {
+void import("./_bookmarklets/HoverTest.ts?inlineTS").then((x) => {
   makeLink(x.default, "HoverTest");
 });
-void import("ts:./_bookmarklets/IdentifyExplicitNames.ts").then((x) => {
+void import("./_bookmarklets/IdentifyExplicitNames.ts?inlineTS").then((x) => {
   makeLink(x.default, "IdentifyExplicitNames");
 });
-void import("ts:./_bookmarklets/ImageCheck.ts").then((x) => {
+void import("./_bookmarklets/ImageCheck.ts?inlineTS").then((x) => {
   makeLink(x.default, "ImageChecker");
 });
-void import("ts:./_bookmarklets/Pathify.ts").then((x) => {
+void import("./_bookmarklets/Pathify.ts?inlineTS").then((x) => {
   makeLink(x.default, "Pathify");
 });
-void import("ts:./_bookmarklets/MakeSkele.ts").then((x) => {
+void import("./_bookmarklets/MakeSkele.ts?inlineTS").then((x) => {
   makeLink(x.default, "MakeSkele");
 });
-void import("ts:./_bookmarklets/ShowImageAlt.ts").then((x) => {
+void import("./_bookmarklets/ShowImageAlt.ts?inlineTS").then((x) => {
   makeLink(x.default, "ShowImageAlt");
 });
-void import("ts:./_bookmarklets/dupeIdCheck.ts").then((x) => {
+void import("./_bookmarklets/dupeIdCheck.ts?inlineTS").then((x) => {
   makeLink(x.default, "DupeId");
 });
-void import("ts:./_bookmarklets/TextObserver.ts").then((x) => {
+void import("./_bookmarklets/TextObserver.ts?inlineTS").then((x) => {
   makeLink(x.default, "TextObserver");
 });
-void import("ts:./_bookmarklets/FocusStyleCheck.ts").then((x) => {
+void import("./_bookmarklets/FocusStyleCheck.ts?inlineTS").then((x) => {
   makeLink(x.default, "FocusStyleCheck");
 });
 
@@ -57,7 +59,6 @@ void import("ts:./_bookmarklets/FocusStyleCheck.ts").then((x) => {
 // root.setAttribute("id", "root");
 // document.body.appendChild(root);
 const root = document.getElementById("main");
-import { htmlFiles } from "virtual:site-map";
 
 const tocRoot = document.getElementById("toc");
 if (!tocRoot) throw new Error("TOC root not found");
@@ -76,6 +77,7 @@ for (const key in htmlFiles) {
 }
 
 const makeLink = (x: string, name: string): void => {
+  assert(root !== null, "Root element not found");
   const rowDiv = document.createElement("div");
   rowDiv.classList.add("row");
   const anchorElement = document.createElement("a");
@@ -83,5 +85,14 @@ const makeLink = (x: string, name: string): void => {
   anchorElement.innerText = name;
   anchorElement.id = short_uuid();
   rowDiv.appendChild(anchorElement);
-  root?.appendChild(rowDiv);
+
+  // Insert the new link in sorted order
+  // could optimize by doing a binary search, but since the number of links is likely small, a linear search is probably fine
+  const existingLinks = [...root.children].sort((a, b) => a.textContent.localeCompare(b.textContent));
+  const insertIndex = existingLinks.findIndex((child) => child.textContent.localeCompare(name) > 0);
+  if (insertIndex === -1) {
+    root.appendChild(rowDiv);
+  } else {
+    root.insertBefore(rowDiv, existingLinks[insertIndex]);
+  }
 };

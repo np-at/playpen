@@ -2,8 +2,10 @@ import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 import eslintConfigPrettierFlat from "eslint-config-prettier/flat";
 import htmlEslint from "@html-eslint/eslint-plugin";
+import {defineConfig} from "eslint/config"
 
-export default tseslint.config(
+
+export default defineConfig(
   eslint.configs.recommended,
   tseslint.configs.strictTypeChecked,
   {

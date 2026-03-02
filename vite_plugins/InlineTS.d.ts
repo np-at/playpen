@@ -1,4 +1,4 @@
-declare module "ts:*" {
+declare module "*?inlineTS" {
   const value: string;
   export default value;
 }

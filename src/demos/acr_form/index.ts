@@ -1,8 +1,7 @@
-import "./styles.scss"
+import "./styles.css"
 
-import  * as bootstrap from "bootstrap";
+import  "bootstrap";
 import { MyTable } from "./table.ts";
-import { setupHandleFileSelect } from "./loadFile.ts";
 import { ACRFormState } from "./State.ts";
 
 const defaultFormState: { findings: ACRFormState["findings"] } = {

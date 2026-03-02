@@ -4,7 +4,7 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vitest", "@vitest/browser", "@vitest/browser/matchers"],
+    "types": ["vitest"],
     "skipLibCheck": true,
     "sourceMap": true,
 
