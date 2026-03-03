@@ -3,7 +3,7 @@ import type { TestFinding } from "./State.ts";
 import { loadFile } from "./loadFile.ts";
 
 export class MyTable {
-  private findingMap: WeakMap<HTMLTableRowElement, TestFinding> = new WeakMap();
+  private readonly findingMap: WeakMap<HTMLTableRowElement, TestFinding> = new WeakMap();
   tableNode: HTMLTableElement;
   public constructor(tableNode: HTMLElement | string) {
     if (typeof tableNode === "string") {

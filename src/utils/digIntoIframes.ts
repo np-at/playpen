@@ -16,7 +16,7 @@ export function digIntoIframes(root: Document | ShadowRoot, fxn: (arg0: Document
               fxn(doc);
               digIntoIframes(doc, fxn);
             })
-            .catch((err) => {
+            .catch((err:unknown) => {
               console.error(err);
             });
         })

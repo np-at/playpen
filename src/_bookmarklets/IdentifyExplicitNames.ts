@@ -30,7 +30,7 @@ const Labelling = {
 } as const;
 
 interface LabelledElement {
-  name: string;
+  name: string | null;
   labellingMethod: (typeof Labelling)[keyof typeof Labelling];
   target: HTMLElement;
 }
@@ -41,7 +41,7 @@ function IdentifyExplicitNames(target: HTMLElement): boolean {
   const hasAriaLabel: LabelledElement[] = Array.from(target.querySelectorAll("[aria-label]")).map((x) => ({
     // we know this is defined because we're querying for it
 
-    name: x.getAttribute("aria-label")!,
+    name: x.getAttribute("aria-label"),
     labellingMethod: Labelling.ariaLabel,
     target: x as HTMLElement,
   }));
@@ -71,7 +71,7 @@ function IdentifyExplicitNames(target: HTMLElement): boolean {
           target: x,
         },
     )
-    .filter((x) => x !== undefined) as LabelledElement[];
+    .filter((x) => x !== false);
   console.dir("hasAriaLabel: ", hasAriaLabel);
   console.dir("hasAriaLabeledBy: ", hasAriaLabeledBy);
   console.dir("hasExternalLabel: ", hasExternalLabel);

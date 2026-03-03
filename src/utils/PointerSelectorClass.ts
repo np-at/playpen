@@ -76,26 +76,31 @@ export class PointerSelector {
     //   this._pointerSelectorClassName
     // ) as HTMLElement;
     if (!this._pointerSelector) throw new Error("Pointer selector does not exist");
-    this._pointerSelector.style.top = `${y1 + window.scrollY}px`;
-    this._pointerSelector.style.left = `${x1 + window.scrollX}px`;
-    this._pointerSelector.style.width = `${width}px`;
-    this._pointerSelector.style.height = `${height}px`;
+    this._pointerSelector.style.top = `${(y1 + window.scrollY).toString()}px`;
+    this._pointerSelector.style.left = `${(x1 + window.scrollX).toString()}px`;
+    this._pointerSelector.style.width = `${width.toString()}px`;
+    this._pointerSelector.style.height = `${height.toString()}px`;
   };
 
-  private readonly getTargetFromCachedCoords: (sourceEvent: MouseEvent) => HTMLElement = (sourceEvent) => {
+  private readonly getTargetFromCachedCoords: (sourceEvent: MouseEvent) => Element | null = (sourceEvent) => {
     if (!this._pointerSelector) throw new Error("Pointer selector does not exist");
     this._pointerSelector.style.display = "none";
     this._pointerSelector.remove();
     const t = document.elementFromPoint(
       this._latestCoordinates.x - (sourceEvent.view?.scrollX ?? 0),
       this._latestCoordinates.y - (sourceEvent.view?.scrollY ?? 0),
-    ) as HTMLElement;
+    );
     this._pointerSelector.style.display = "block";
     document.body.appendChild(this._pointerSelector);
     if (!t) {
       console.error("Target is undefined", this._latestCoordinates);
     }
     return t;
+    // if (t instanceof HTMLElement) {
+    //   return t;
+    // }
+    // console.error("Target is not an HTMLElement", t);
+    // throw new Error("Target is not an HTMLElement");
   };
 
   private readonly createPointerSelector = (clickHandler: ((e: HTMLElement) => boolean) | undefined): boolean => {
