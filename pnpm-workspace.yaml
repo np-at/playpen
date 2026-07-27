@@ -1,4 +1,5 @@
 allowBuilds:
+  '@parcel/watcher': true
   esbuild: true
 minimumReleaseAgeExclude:
   - flatted@3.4.0 || 3.4.2
