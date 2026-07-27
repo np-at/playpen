@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "bld": "vite build",
     "preview": "vite preview",
     "lint": "eslint --cache .",
     "lint:fix": "eslint --cache --fix",
@@ -40,6 +41,7 @@
     "axe-core": "^4.11.1",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
+    "monaco-editor": "^0.55.1",
     "typebox": "^1.1.5"
   }
 }

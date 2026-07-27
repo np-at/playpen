@@ -157,7 +157,7 @@ function getXpathAndSource(): void {
       if (!allTargetsFileDownloadLinkReadable) {
         throw new Error("allTargetsFileDownloadLinkReadable not found");
       }
-      a.setAttribute("download", prefix ?? "" + "-xpaths-targets-selected---human-readable.txt");
+      a.setAttribute("download", (prefix ?? "") + "-xpaths-targets-selected---human-readable.txt");
       e.stopPropagation();
     });
     document.body.appendChild(a);
@@ -173,7 +173,7 @@ function getXpathAndSource(): void {
 
       document
         .getElementById("allTargetsFileDownloadLinkProcessed")
-        ?.setAttribute("download", prefix ?? "" + "-xpaths-targets-selected---machine-readable.txt");
+        ?.setAttribute("download", (prefix ?? "") + "-xpaths-targets-selected---machine-readable.txt");
       e.stopPropagation();
     });
     document.body.appendChild(a);
@@ -412,7 +412,7 @@ function getXpathAndSource(): void {
           highlightElement(currentEl);
         }
         updateInfoPanel(currentEl);
-        infoPanel.textContent = infoPanel.textContent ?? "" + " 👈 Press Return to get this element's details";
+        infoPanel.textContent = infoPanel.textContent.trim() + " 👈 Press Return to get this element's details";
       }
       if (e.key === "ArrowLeft") {
         e.preventDefault();
@@ -435,17 +435,25 @@ function getXpathAndSource(): void {
         if (currentEl.childNodes.length > 1) {
           unhighlightElement(currentEl);
           let elementNodeFound = false;
-          let elementToMoveTo;
+          let elementToMoveTo: Element | undefined;
 
           Array.from(currentEl.childNodes).forEach((thisNode) => {
-            if (thisNode.nodeType === 1 && !elementNodeFound) {
+            // Narrow rather than assert: asserting `instanceof HTMLElement` would throw
+            // mid-keydown, after currentEl was already unhighlighted, leaving navigation in a
+            // broken state. Narrow to `Element` (not `HTMLElement`) so SVG/MathML children stay
+            // navigable, matching the previous `nodeType === 1` check.
+            if (thisNode instanceof Element && !elementNodeFound) {
               elementNodeFound = true;
               elementToMoveTo = thisNode;
             }
           });
           if (elementToMoveTo) {
-            currentEl = elementToMoveTo;
+            currentEl = elementToMoveTo as HTMLElement;
             indicateCurrentEl(currentEl, e);
+          } else {
+            // Nothing to descend into: undo the unhighlight above so the current selection
+            // stays visible instead of silently disappearing.
+            highlightElement(currentEl);
           }
         }
       }

@@ -3,10 +3,10 @@ export function setupHandleFileSelect() {
   document.body.addEventListener("change", (event) => {
     const target = event.target;
     if (!target || !(target instanceof HTMLInputElement) || target.type !== "file") return;
-    if (!(target.getAttribute("data-input-action")?.trim() === 'loadFile')) return;
+    if (!(target.getAttribute("data-input-action")?.trim() === "loadFile")) return;
     assert(event instanceof InputEvent, "event should be an InputEvent");
     loadFile(event);
-  })
+  });
 }
 export function loadFile(event: Event) {
   const btn = event.target;

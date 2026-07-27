@@ -1,7 +1,8 @@
-import type { Plugin } from "vite";
+import type { Plugin, Rollup } from "vite";
 import { createFilter } from "vite";
-import { join, dirname } from "node:path";
-import { build } from "esbuild";
+import { join, dirname, basename } from "node:path";
+import { build, type OutputFile } from "esbuild";
+import { ok as assert } from "node:assert";
 
 const defaults = {
   exclude: null,
@@ -13,7 +14,8 @@ function cleanCode(c: string) {
   return c.trim();
 }
 
-const formatAsBookmarklet = (code: string, encode = true) => {
+const formatAsBookmarklet = (output: OutputFile, encode = true) => {
+  const { text: code,  } = output;
   return (
     "'javascript:" +
     (encode ? encodeURIComponent : (e: string) => e)("(async ()=>{" + cleanCode(code)).replace(/(')/g, "\\$1") +
@@ -31,8 +33,9 @@ async function compile(inputFile: string, minify: boolean, isDebug = false) {
     treeShaking: true,
 
     write: false,
-    sourcemap: isDebug ? "inline" : false,
+    sourcemap:  isDebug ? "external" : false,
     sourcesContent: true,
+    format: 'iife',
     platform: "browser",
     splitting: false,
     outdir: "dist/",
@@ -61,11 +64,13 @@ async function compile(inputFile: string, minify: boolean, isDebug = false) {
       : {}),
   });
   const code = buildResult.outputFiles.find((x) => x.path.endsWith(".js"));
-  // const sourceMap = JSON.parse(buildResult.outputFiles.find(x=>x.path.endsWith('.map'))?.text ?? '') as SourceMap | undefined
-  if (!code) {
-    throw new Error(`code result not found during bundling of ${inputFile}`);
-  }
-  return formatAsBookmarklet(code.text, true);
+
+  assert(typeof code !== 'undefined', "code should be defined");
+
+
+  const sourceMapFile = buildResult.outputFiles.find(x=>x.path.endsWith(basename(code.path) + '.map'))
+
+  return {code:formatAsBookmarklet(code, true), map:sourceMapFile?.text};
 }
 
 export default function inlineTS(opts = {}): Plugin<void> {
@@ -84,7 +89,7 @@ export default function inlineTS(opts = {}): Plugin<void> {
       //   // console.log(`skipping ${source} since type is ${JSON.stringify(opts)}`);
       //   return null;
       // }
-      if (!source.endsWith('?inlineTS')) {
+      if (!source.endsWith("?inlineTS")) {
         return null;
       }
 
@@ -94,7 +99,7 @@ export default function inlineTS(opts = {}): Plugin<void> {
       // if (!source.startsWith("ts:")) {
       //   return null;
       // }
-      const _src = source.slice(0,source.length - '?inlineTS'.length);
+      const _src = source.slice(0, source.length - "?inlineTS".length);
 
       if (!_src.startsWith(".")) {
         resolved[_src] = { content: "" };
@@ -108,20 +113,24 @@ export default function inlineTS(opts = {}): Plugin<void> {
       return newId;
     },
     enforce: "pre",
-    async load(this, id: string) {
+    async load(this, id: string): Promise<Rollup.LoadResult> {
       if (!filter(id)) {
         return null;
       }
-      if (!resolved[id]) {
+      if (!(id in resolved) || typeof resolved[id] === 'undefined') {
         return null;
       }
 
       this.addWatchFile(id);
 
-      const code = await compile(id, options.minify, false);
+      const { code } = await compile(id, options.minify, false);
 
+      // No `map` is returned: the emitted module is a single string literal holding the
+      // bookmarklet URL, so esbuild's sourcemap for the bundled JS has no positional
+      // relationship to it. Returning it (even parsed) yields a garbage sourcemap.
       return {
         code: `export default ${code.trim()}`,
+        map: null,
       };
     },
   };

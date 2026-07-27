@@ -53,7 +53,11 @@ export class PointerSelector {
     }
     let remove;
     try {
-      remove = this._clickHandler?.(t);
+      // `elementFromPoint` legitimately returns non-HTML elements (SVG icons, MathML),
+      // so we must not assert `t instanceof HTMLElement` here: throwing lands in the
+      // catch below, sets `remove = true` and tears the selector down without ever
+      // invoking the click handler.
+      remove = this._clickHandler?.(t as HTMLElement);
     } catch (e) {
       console.error(e);
       remove = true;
@@ -185,6 +189,7 @@ export class PointerSelector {
     lowerEl?.dispatchEvent(
       new MouseEvent(eventType, {
         bubbles: true,
+        composed: true
       }),
     );
 

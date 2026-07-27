@@ -3,9 +3,8 @@ import { relative, resolve } from "node:path";
 import { readdirSync } from "node:fs";
 import type { ViteUserConfig } from "vitest/config";
 import inlineTS from "./vite_plugins/InlineTSPlugin.js";
-import {playwright} from "@vitest/browser-playwright"
-import  { type Plugin } from "vite";
-
+import { playwright } from "@vitest/browser-playwright";
+import { type Plugin } from "vite";
 
 const SOURCE_ROOT = "src/";
 
@@ -77,14 +76,19 @@ export default {
     },
   },
   build: {
-    target: "esnext",
+    target: 'baseline-widely-available',
     sourcemap: true,
+    modulePreload: {
+      polyfill: false
+    },
     rollupOptions: {
       input: htmlFiles,
+      treeshake: 'recommended',
     },
     outDir: "../dist",
     emptyOutDir: true,
     chunkSizeWarningLimit: 1000,
+
   },
   server: {
     port: 5922,

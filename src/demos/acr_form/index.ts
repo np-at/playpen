@@ -1,8 +1,14 @@
-import "./styles.css"
+import "./styles.css";
 
-import  "bootstrap";
+// import "bootstrap";
 import { MyTable } from "./table.ts";
 import { ACRFormState } from "./State.ts";
+import * as monaco from "monaco-editor";
+import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
+import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
+import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
+import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
+import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 
 const defaultFormState: { findings: ACRFormState["findings"] } = {
   findings: [
@@ -196,10 +202,51 @@ if (state.findings.length === 0) {
 }
 window._state = state;
 
-const _table = new MyTable('#myTable');
-window._state.findings.forEach(finding => _table.addRow(finding));
+const _table = new MyTable("#myTable");
+window._state.findings.forEach((finding) => _table.addRow(finding));
 // setupHandleFileSelect();
 
+self.MonacoEnvironment = {
+  getWorker(_, label) {
+    if (label === "json") {
+      return new jsonWorker();
+    }
+    if (label === "css" || label === "scss" || label === "less") {
+      return new cssWorker();
+    }
+    if (label === "html" || label === "handlebars" || label === "razor") {
+      return new htmlWorker();
+    }
+    if (label === "typescript" || label === "javascript") {
+      return new tsWorker();
+    }
+    return new editorWorker();
+  },
+};
+
+const editorContainer = document.getElementById("editor");
+if (!editorContainer) {
+  throw new Error("#editor container not found");
+}
+
+monaco.editor.create(editorContainer, {
+  value: "# Documentation\n\nThis is a markdown editor powered by Monaco Editor.",
+  language: "markdown",
+  ariaLabel: "Sample Text Area With Editor",
+  ariaRequired: true,
+  theme: "vs-dark",
+  "semanticHighlighting.enabled": true,
+  automaticLayout: true,
+  cursorStyle: "block",
+  folding: true,
+  inlineSuggest: {
+    enabled: true,
+    showToolbar: "always",
+  },
+  minimap: {
+    enabled: true,
+  },
+});
 
 declare global {
   interface Window {

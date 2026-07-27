@@ -1,170 +1,130 @@
 <!doctype html>
 <html lang="en" xmlns="http://www.w3.org/1999/html">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" >
     <title>Radiogroup testing</title>
     <script defer src="RT_radiogroup.ts" type="module"></script>
     <script defer src="AA_Radiogroup.ts" type="module"></script>
-    <link href="../../styles/global.css" rel="stylesheet">
+    <link href="../../styles/global.css" rel="stylesheet" >
     <script defer type="module">
-        "use strict"
+      "use strict";
 
-        document.body.addEventListener('keypress', function (ev) {
-            console.log("keypress", ev.key, ev.target, ev.currentTarget);
-        })
-        document.body.addEventListener('click', function (ev) {
-            console.log("click", ev);
-        })
+      document.body.addEventListener("keypress", function (ev) {
+        console.log("keypress", ev.key, ev.target, ev.currentTarget);
+      });
+      document.body.addEventListener("click", function (ev) {
+        console.log("click", ev);
+      });
     </script>
-
-</head>
-<body>
-<h1>Radiogroup variant testing</h1>
-<div class="row">
-    <h2>Native radio buttons</h2>
-    <h3 id="ex1">Standard Fieldset & legend</h3>
-    <fieldset>
+  </head>
+  <body>
+    <h1>Radiogroup variant testing</h1>
+    <div class="row">
+      <h2>Native radio buttons</h2>
+      <h3 id="ex1">Standard Fieldset & legend</h3>
+      <fieldset>
         <legend>grungi</legend>
-        <label>
-            <input checked name="aa" type="radio" value="test">test1
-        </label>
-        <label>
-            <input name="aa" type="radio" value="test2">test2
-        </label>
-    </fieldset>
-    <dl>
+        <label> <input checked name="aa" type="radio" value="test" >test1 </label>
+        <label> <input name="aa" type="radio" value="test2" >test2 </label>
+      </fieldset>
+      <dl>
         <dt>Expected Behavior:</dt>
         <dd></dd>
         <dt>Observed:</dt>
-        <dd>
-            d
-        </dd>
-    </dl>
-    <h3 id="ex2">Fieldset & legend with <code>aria-label</code> override on fieldset</h3>
-    <fieldset aria-label="okri">
+        <dd>d</dd>
+      </dl>
+      <h3 id="ex2">Fieldset & legend with <code>aria-label</code> override on fieldset</h3>
+      <fieldset aria-label="okri">
         <legend>grungi</legend>
-        <label> <input checked name="bb" type="radio" value="test">test1 </label>
-        <label> <input name="bb" type="radio" value="test2">test2 </label>
-    </fieldset>
-    <h2 id="ex3">Fieldset & legend with <code>aria-label</code> override on fieldset</h2>
-    <fieldset aria-label="okri">
+        <label> <input checked name="bb" type="radio" value="test" >test1 </label>
+        <label> <input name="bb" type="radio" value="test2" >test2 </label>
+      </fieldset>
+      <h2 id="ex3">Fieldset & legend with <code>aria-label</code> override on fieldset</h2>
+      <fieldset aria-label="okri">
         <legend>grungi</legend>
-        <label> <input checked name="cc" type="radio" value="test">test1 </label>
-        <label> <input name="cc" type="radio" value="test2">test2 </label>
-    </fieldset>
-    <h2>Roving Tabindex</h2>
-    <h3 id="ex4"> fieldset with visually hidden legend</h3>
-    <fieldset class="radiogroup-rovingtabindex" id="rg1" role="radiogroup">
+        <label> <input checked name="cc" type="radio" value="test" >test1 </label>
+        <label> <input name="cc" type="radio" value="test2" >test2 </label>
+      </fieldset>
+      <h2>Roving Tabindex</h2>
+      <h3 id="ex4">fieldset with visually hidden legend</h3>
+      <fieldset class="radiogroup-rovingtabindex" id="rg1" role="radiogroup">
         <legend class="visually-hidden" id="group_label_1">Pizza Crust</legend>
         <h4 aria-hidden="true">Pizza Crust</h4>
         <div aria-checked="false" role="radio" tabindex="0">Regular crust</div>
         <div aria-checked="false" role="radio" tabindex="-1">Deep dish</div>
         <div aria-checked="false" role="radio" tabindex="-1">Thin crust</div>
-    </fieldset>
-    <h3 id="ex5">div with <code>role="radiogroup"</code> and <code>aria-labelledby</code></h3>
-    <div aria-labelledby="group_label_2" class="radiogroup-rovingtabindex" id="rg2" role="radiogroup">
+      </fieldset>
+      <h3 id="ex5">div with <code>role="radiogroup"</code> and <code>aria-labelledby</code></h3>
+      <div aria-labelledby="group_label_2" class="radiogroup-rovingtabindex" id="rg2" role="radiogroup">
         <h3 id="group_label_2">Pizza Delivery</h3>
         <div aria-checked="false" role="radio" tabindex="0">Pickup</div>
 
         <div aria-checked="false" role="radio" tabindex="-1">Home Delivery</div>
 
         <div aria-checked="false" role="radio" tabindex="-1">Dine in</div>
+      </div>
     </div>
-</div>
 
-<div class="row">
-    <h2>Aria activedescendant</h2>
-    <h3 id="ex6">div with <code>role="radiogroup"</code> and <code>aria-labelledby</code></h3>
-    <h4 id="group_label_3">Pizza Crust</h4>
+    <div class="row">
+      <h2>Aria activedescendant</h2>
+      <h3 id="ex6">div with <code>role="radiogroup"</code> and <code>aria-labelledby</code></h3>
+      <h4 id="group_label_3">Pizza Crust</h4>
 
-    <div
-            aria-labelledby="group_label_3"
-            class="radiogroup-activedescendant"
-            role="radiogroup"
-            tabindex="0"
-    >
+      <div aria-labelledby="group_label_3" class="radiogroup-activedescendant" role="radiogroup" tabindex="0">
         <div aria-checked="false" id="rb11" role="radio">Regular crust</div>
         <div aria-checked="false" id="rb12" role="radio">Deep dish</div>
         <div aria-checked="false" id="rb13" role="radio">Thin crust</div>
-    </div>
+      </div>
 
+      <h3 id="ex7">div with <code>role="group"</code></h3>
+      <h4 id="group_label_4">Container with <code>role="group"</code></h4>
 
-    <h3 id="ex7">div with <code>role="group"</code></h3>
-    <h4 id="group_label_4">Container with <code>role="group"</code></h4>
-
-    <ul aria-labelledby="group_label_4" class="radiogroup-activedescendant" role="group"
-        tabindex="0">
+      <ul aria-labelledby="group_label_4" class="radiogroup-activedescendant" role="group" tabindex="0">
         <li aria-checked="false" id="rb21" role="radio">Pick up</li>
         <li aria-checked="false" id="rb22" role="radio">Home Delivery</li>
         <li aria-checked="false" id="rb23" role="radio">Dine in Restaurant</li>
-    </ul>
-    <details>
-        <summary>
-            Description
-        </summary>
+      </ul>
+      <details>
+        <summary>Description</summary>
+      </details>
+    </div>
 
-    </details>
-</div>
+    <table>
+      <caption>
+        <h3>Support matrix</h3>
+      </caption>
 
-<table>
-    <caption>
-        <h3>
-            Support matrix
-        </h3>
-    </caption>
-
-    <thead>
-    <tr>
-        <th>
-
-        </th>
-        <th>
-            ios/VO
-        </th>
-        <th>ios/FKA</th>
-        <th>android/Talkback</th>
-        <th>android / Keyboard</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr>
-        <th scope="row">
+      <thead>
+        <tr>
+          <th></th>
+          <th>ios/VO</th>
+          <th>ios/FKA</th>
+          <th>android/Talkback</th>
+          <th>android / Keyboard</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">
             <a href="#ex1">Roving Tabindex & fieldset</a>
-        </th>
-        <td>
-            -
-        </td>
-        <td>
-            -
-        </td>
-        <td>
-            -
-        </td>
-        <td>
-            -
-        </td>
-    </tr>
-    <tr>
-        <th scope="row">
+          </th>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+        </tr>
+        <tr>
+          <th scope="row">
             <a href="#ex2">Roving Tabindex & fieldset</a>
-        </th>
-        <td>
-            -
-        </td>
-        <td>
-            -
-        </td>
-        <td>
-            -
-        </td>
-        <td>
-            -
-        </td>
-    </tr>
-    </tbody>
-</table>
-<script type="module"></script>
-<div class="row">asdf</div>
-
-</body>
+          </th>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+        </tr>
+      </tbody>
+    </table>
+    <script type="module"></script>
+    <div class="row">asdf</div>
+  </body>
 </html>

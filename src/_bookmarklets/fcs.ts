@@ -125,7 +125,7 @@ function createArrowSvg(c1: number[], c2: number[], svg: HTMLElement | null): vo
 
   // console.log("x3,y3", [x3, y3]);
   const triangle = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-  triangle.setAttribute("points", `${c2[0]},${c2[1]} ${x3},${y3} ${x4},${y4}`);
+  triangle.setAttribute("points", `${c2[0].toString()},${c2[1].toString()} ${x3.toString()},${y3.toString()} ${x4.toString()},${y4.toString()}`);
   triangle.setAttribute("fillcolor", "blue");
   if (svg == null) {
     const newSvg: SVGElement = document.createElementNS("http://www.w3.org/2000/svg", "svg");

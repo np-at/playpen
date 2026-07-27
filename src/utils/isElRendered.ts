@@ -1,4 +1,7 @@
-function closestOther<T extends keyof HTMLElementTagNameMap>(el: HTMLElement | null | undefined, selector: T): HTMLElementTagNameMap[T] | null {
+function closestOther<T extends keyof HTMLElementTagNameMap>(
+  el: HTMLElement | null | undefined,
+  selector: T,
+): HTMLElementTagNameMap[T] | null {
   if (!el) return null;
   const r = el.closest(selector);
   if (r && !r.isSameNode(el)) {

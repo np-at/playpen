@@ -4,10 +4,6 @@
 
 import { assert } from "./assert";
 
-
-
-
-
 export const fullQualifiedSelector = function (node: Node, justSelector?: boolean): string {
   if (node.nodeType !== Node.ELEMENT_NODE) {
     return node.nodeName.toLowerCase();
@@ -207,7 +203,7 @@ export const xPath = function (node: Node, optimized?: boolean): string {
 };
 
 const xPathValue = function (node: Node, optimized?: boolean): Step | null {
-  let ownValue:string;
+  let ownValue: string;
   const ownIndex = xPathIndex(node);
   if (ownIndex === -1) {
     return null;
@@ -216,7 +212,7 @@ const xPathValue = function (node: Node, optimized?: boolean): Step | null {
   switch (node.nodeType) {
     case Node.ELEMENT_NODE:
       if (optimized && (node as HTMLElement).getAttribute("id")) {
-        return new Step('//*[@id="' + ((node as HTMLElement).getAttribute("id") ?? 'ERR') + '"]', true);
+        return new Step('//*[@id="' + ((node as HTMLElement).getAttribute("id") ?? "ERR") + '"]', true);
       }
       ownValue = node.nodeName;
       break;

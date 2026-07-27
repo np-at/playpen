@@ -85,25 +85,34 @@ export function finder(input: Element, options?: Partial<FinderOptions>): string
         maybe(...classNames(current)) ||
         maybe(tagName(current)) || [any()];
       const nth = index(current);
-      if (limit == "all") {
-        if (nth) {
-          level = level.concat(level.filter(dispensableNth).map((node) => nthChild(node, nth)));
+      switch (limit) {
+        case "all":
+          if (nth) {
+            level = level.concat(level.filter(dispensableNth).map((node) => nthChild(node, nth)));
+          }
+          break;
+        case "two":
+          level = level.slice(0, 1);
+          if (nth) {
+            level = level.concat(level.filter(dispensableNth).map((node) => nthChild(node, nth)));
+          }
+          break;
+        case "one": {
+          const [node] = (level = level.slice(0, 1));
+          if (nth && dispensableNth(node)) {
+            level = [nthChild(node, nth)];
+          }
+          break;
         }
-      } else if (limit == "two") {
-        level = level.slice(0, 1);
-        if (nth) {
-          level = level.concat(level.filter(dispensableNth).map((node) => nthChild(node, nth)));
-        }
-      } else if (limit == "one") {
-        const [node] = (level = level.slice(0, 1));
-        if (nth && dispensableNth(node)) {
-          level = [nthChild(node, nth)];
-        }
-      } else if (limit == "none") {
-        level = [any()];
-        if (nth) {
-          level = [nthChild(level[0], nth)];
-        }
+
+        case "none":
+          level = [any()];
+          if (nth) {
+            level = [nthChild(level[0], nth)];
+          }
+          break;
+        default:
+          throw new Error("Invalid limit value");
       }
       for (const node of level) {
         node.level = i;
@@ -244,7 +253,7 @@ export function finder(input: Element, options?: Partial<FinderOptions>): string
 
   function nthChild(node: Knot, i: number): Knot {
     return {
-      name: node.name + `:nth-child(${i})`,
+      name: node.name + `:nth-child(${i.toString(10)})`,
       penalty: node.penalty + 1,
     };
   }
