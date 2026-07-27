@@ -1,4 +1,4 @@
-import { getName, getRole } from "aria-api";
+import { getName } from "aria-api";
 import { drawBox, type DrawStyleProps, ensureBoundingStyleAvailable } from "../utils/drawUtils";
 import { makeDraggableDisplay } from "../utils/makeDraggableOverlay";
 import { finder } from "../utils/finder";
@@ -11,28 +11,6 @@ function displayDiv(): HTMLDivElement {
     _displayDiv = (document.getElementById(display_div_id) as HTMLDivElement | null) ?? createDisplayDiv();
   }
   return _displayDiv;
-}
-
-const errorStyle: DrawStyleProps = {
-  backgroundColor: "rgba(255, 0, 0, 0.8)",
-  color: "white",
-  borderColor: "goldenrod",
-};
-const warnStyle: DrawStyleProps = {
-  backgroundColor: "rgba(255, 255, 255, 0.8)",
-  color: "black",
-  borderColor: "goldenrod",
-};
-const okStyle: DrawStyleProps = {
-  backgroundColor: "rgba(255, 255, 255, 0.8)",
-  color: "black",
-  borderColor: "goldenrod",
-};
-
-function evaluateImg(el: HTMLElement): void {
-  const alt = el.getAttribute("alt");
-  const ATName = getName(el);
-  const role = getRole(el);
 }
 
 function _reset(): void {
@@ -137,7 +115,7 @@ export default function _main(reset: boolean = false): void {
     scrim.style.pointerEvents = "none";
     document.body.appendChild(scrim);
 
-    drawBox(scrim, rel_showImageAlt, overlayText ?? "ERROR", style);
+    drawBox(scrim, rel_showImageAlt, overlayText, style);
     const selector = finder(el);
     addDisplayItem(overlayText, style, selector);
     // if (alt === "") {

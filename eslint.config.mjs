@@ -61,6 +61,8 @@ export default defineConfig(
       // other
       "@html-eslint/no-target-blank": "error",
       "@html-eslint/no-duplicate-attrs": "error",
+      "@html-eslint/no-extra-spacing-tags": "off",
+      "@html-eslint/require-closing-tags": "off",
     },
   },
   {

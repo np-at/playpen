@@ -4,7 +4,7 @@ const findDuplicateIds: () => void = () => {
     .filter((x) => !!x);
   const elements = Array.from(document.querySelectorAll("*"));
   const b: HTMLElement[] = [];
-  elements?.forEach((x: Element) => {
+  elements.forEach((x: Element) => {
     if (a.filter((f) => f === x.id).length > 1) {
       b.push(x as HTMLElement);
     }

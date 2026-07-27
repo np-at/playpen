@@ -5,7 +5,7 @@ function TextSpacing(): void {
   const id = "phltsbkmklt";
   const el = d.getElementById(id);
   const f = d.querySelectorAll("iframe");
-  let i = 0;
+  let i: number;
   const l = f.length;
   if (el != null) {
     function removeFromShadows(root: ShadowRoot | Document | undefined): void {

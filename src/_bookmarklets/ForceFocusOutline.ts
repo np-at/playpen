@@ -5,7 +5,7 @@ function ForceFocusOutline(): void {
   const id = "phlffobkmklt";
   const el = d.getElementById(id);
   const f = d.querySelectorAll("iframe");
-  let i = 0;
+  let i: number;
   const l = f.length;
   if (el != null) {
     const removeFromShadows = (root: Document | ShadowRoot | undefined): void => {

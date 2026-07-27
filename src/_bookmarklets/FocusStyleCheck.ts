@@ -3,6 +3,14 @@ import { sleep } from "../utils/sleep.ts";
 import { short_uuid } from "../utils/stringUtils.ts";
 import { isElRendered } from "../utils/isElRendered.ts";
 
+function styleToObject(style: CSSStyleDeclaration): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const prop of style) {
+    result[prop] = style.getPropertyValue(prop);
+  }
+  return result;
+}
+
 function getFocusRelevantStyles(el: HTMLElement) {
   // const styleMap = el.computedStyleMap();
   const styleMap = window.getComputedStyle(el, null);
@@ -16,15 +24,9 @@ function getFocusRelevantStyles(el: HTMLElement) {
     // border: styleMap.border,
     // background: styleMap.background,
     // color: styleMap.color,
-    style: {
-      ...styleMap,
-    },
-    before: {
-      ...before,
-    },
-    after: {
-      ...after,
-    },
+    style: styleToObject(styleMap),
+    before: styleToObject(before),
+    after: styleToObject(after),
   };
 }
 
@@ -34,9 +36,13 @@ async function testFocusStyles(el: HTMLElement): Promise<ObjectDiff | null> {
   // same for inert
   if (el.closest("[inert]") !== null) return null;
   // assume natively focusable elements with tabindex="-1" are intentionally removed from focus order (ie not going to be a programmatic focus target)
-  if (el.getAttribute("tabindex") === "-1" && el.tagName in ["a", "button", "input"]) return null;
+  if (
+    el.getAttribute("tabindex") === "-1" &&
+    ["a", "button", "input"].includes(el.tagName.toLowerCase())
+  )
+    return null;
 
-  if (el.getAttribute("id") !== undefined) {
+  if (el.getAttribute("id") === null) {
     el.setAttribute("id", short_uuid());
   }
 
@@ -103,10 +109,10 @@ async function focusStyleCheck() {
     }
   }
 
-  if (res) {
+  if (res.length > 0) {
     console.warn("found unequal elements", res);
   }
-  if (untestable) {
+  if (untestable.length > 0) {
     console.info("untestable elements", untestable);
   }
 }

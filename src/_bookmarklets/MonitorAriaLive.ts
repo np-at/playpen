@@ -159,8 +159,8 @@ document.body.appendChild(displayContainer);
 function ping(x: number, y: number): void {
   const pingAnimation = document.createElement("div");
   pingAnimation.classList.add("circle");
-  pingAnimation.style.top = `${y}px`;
-  pingAnimation.style.left = `${x}px`;
+  pingAnimation.style.top = `${y.toString()}px`;
+  pingAnimation.style.left = `${x.toString()}px`;
   pingAnimation.style.display = "block";
   document.body.appendChild(pingAnimation);
   setTimeout(() => {
@@ -180,7 +180,7 @@ const displaytemplate = (mutation: MutationRecord): string => {
   const type = mutation.type;
   const result = `
     <div class="arialive-result">
-        <div>type: ${type.toString()}</div>
+        <div>type: ${type}</div>
         <div>target: ${target.outerText}</div>
         ${target.outerHTML ? `<div>outerHTML: ${target.outerHTML}</div>` : ""}
         ${attr ? `<div>attribute: ${attr}</div>` : ""}
@@ -216,10 +216,10 @@ function drawHighlightOverlay(element: HTMLElement): void {
   // overlay.style.transition = "all 2s ease-in-out";
   // element.getBoundingClientRect();
   const rect = element.getBoundingClientRect();
-  overlay.style.top = `${rect.top}px`;
-  overlay.style.left = `${rect.left}px`;
-  overlay.style.width = `${rect.width}px`;
-  overlay.style.height = `${rect.height}px`;
+  overlay.style.top = `${rect.top.toString()}px`;
+  overlay.style.left = `${rect.left.toString()}px`;
+  overlay.style.width = `${rect.width.toString()}px`;
+  overlay.style.height = `${rect.height.toString()}px`;
   document.body.appendChild(overlay);
   // element.appendChild(overlay);
   setTimeout(() => {
@@ -256,7 +256,7 @@ const mutationObserverCallback: MutationCallback = (mutations, _observer) => {
         } else if (x.nodeType === Node.ELEMENT_NODE) {
           console.debug("element node added: ", x);
           const liveregions = Array.from((x as HTMLElement).querySelectorAll("[aria-live]"));
-          if (liveregions) console.debug("found regions: ", liveregions);
+          if (liveregions.length > 0) console.debug("found regions: ", liveregions);
           liveregions.forEach((x) => {
             if (monitoredNodes.includes(x)) {
               console.log("node already present", x);
@@ -274,7 +274,7 @@ const mutationObserverCallback: MutationCallback = (mutations, _observer) => {
         } else if (x.nodeType === Node.ELEMENT_NODE) {
           console.debug("element node removed: ", x);
           const liveRegions = Array.from((x as HTMLElement).querySelectorAll("[aria-live]"));
-          if (liveRegions) console.debug("found regions: ", liveRegions);
+          if (liveRegions.length > 0) console.debug("found regions: ", liveRegions);
           liveRegions.forEach((x) => {
             if (monitoredNodes.includes(x)) {
               console.log("node already present", x);
@@ -336,7 +336,7 @@ function MonitorAriaLive(): void {
   applyToShadowRoots(document.body, (root) => {
     liveregions.push(...Array.from(root.querySelectorAll("[aria-live]")));
   });
-  if (liveregions) console.debug("found regions: ", liveregions);
+  if (liveregions.length > 0) console.debug("found regions: ", liveregions);
   liveregions.forEach((x) => {
     if (monitoredNodes.includes(x)) {
       console.log("node already present", x);

@@ -17,12 +17,6 @@ function applyToSiblings(startNode: Element, cb: (el: Element) => void) {
   }
 }
 
-type MaybePromise<T> = Promise<T> | T;
-const STRATEGY = {
-  PERSIST: "PERSIST",
-  COPY: "COPY",
-};
-const DIALOG_HIDDEN_ATTR = "data-dialog-hidden";
 const DIALOG_ACTIVE_CLASS = "active";
 
 export class DialogManager {
@@ -49,7 +43,7 @@ export class DialogManager {
     }
   }
   close() {}
-  open(source: HTMLElement, beforeOpen?: (arg0: HTMLElement) => void) {
+  open(source: HTMLElement) {
     this.backdrop.classList.add("active");
     const cloned = source.cloneNode(true) as HTMLElement;
     this.backdrop.appendChild(cloned);

@@ -174,7 +174,7 @@ export class PointerSelector {
     // _pointerSelector.style.display = "none";
     const lowerEl = this.getTargetFromCachedCoords(e);
 
-    let eventType = e.type;
+    let eventType: string;
     switch (e.type) {
       case "click":
       case "mouseover":

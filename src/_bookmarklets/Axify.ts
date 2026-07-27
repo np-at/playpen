@@ -12,6 +12,6 @@ run(document, {
   },
 })
   .then(console.log)
-  .catch((err) => {
+  .catch((err: unknown) => {
     throw err;
   });

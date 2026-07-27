@@ -79,7 +79,7 @@ export default function inlineTS(opts = {}): Plugin<void> {
 
   return {
     name: "inlineTS",
-    resolveId(source, importer, opts) {
+    resolveId(source, importer) {
       // if (source.includes('_bookmarklets')) {
       //   console.log(`${source} since type is ${JSON.stringify(opts)}`);
       //

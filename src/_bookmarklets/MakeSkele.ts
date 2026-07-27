@@ -42,7 +42,7 @@ function hashAttr(el: LinkElement): LinkElement {
     if (attrName === "data-hash") {
       continue;
     }
-    const attr = el.getAttribute(attrName);
+    const attr = el.getAttribute(attrName) ?? "";
     hashStr += strToHash(attrName + attr);
   }
 
@@ -98,8 +98,8 @@ function hashNode(el: LinkElement): NodeRep {
   el = hashChildren(el);
   if (
     typeof el.hash_data?.attrHash === "undefined" ||
-    typeof el.hash_data?.childrenHash === "undefined" ||
-    typeof el.hash_data?.textHash === "undefined"
+    typeof el.hash_data.childrenHash === "undefined" ||
+    typeof el.hash_data.textHash === "undefined"
   ) {
     throw new Error(`hash_data is missing a value. This should not happen. ${JSON.stringify(el.hash_data)}`);
   }

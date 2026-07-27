@@ -1,5 +1,5 @@
 function getLangChars(lang: string): string {
-  let utf16range = [-1, -1];
+  let utf16range: [number, number];
   switch (lang) {
     case "en":
       utf16range = [32, 127];

@@ -62,6 +62,7 @@ export class Murmurhash3 {
     len -= this.rem;
     if (len > 0) {
       h1 = this.h1;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- intentional infinite loop, exits via break below
       while (true) {
         k1 = (k1 * 0x2d51 + (k1 & 0xffff) * 0xcc9e0000) & 0xffffffff;
         k1 = (k1 << 15) | (k1 >>> 17);

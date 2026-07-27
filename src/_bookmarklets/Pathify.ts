@@ -115,7 +115,6 @@ function getXpathAndSource(): void {
   let outputPanelForARC_input_label: HTMLLabelElement;
   let outputPanelForARC_closeButton: HTMLButtonElement;
   let outputPanelForARCAdded = false;
-  const hasRun = false;
 
   if (!document.querySelector("#tempDOMDumpingGround")) {
     const tempDOMDumpingGroundNew = document.createElement("div");
@@ -378,9 +377,7 @@ function getXpathAndSource(): void {
   function indicateCurrentEl(el: Element, e: Event): void {
     currentEl = el as HTMLElement;
     e.stopPropagation();
-    if (!hasRun) {
-      highlightElement(el);
-    }
+    highlightElement(el);
     updateInfoPanel(currentEl);
   }
 
