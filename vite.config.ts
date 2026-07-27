@@ -83,7 +83,7 @@ export default {
     },
     rollupOptions: {
       input: htmlFiles,
-      treeshake: 'recommended',
+      treeshake: true,
     },
     outDir: "../dist",
     emptyOutDir: true,
