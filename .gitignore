@@ -1,6 +1,7 @@
 .eslintcache
 
 __screenshots__/
+.vitest-attachments/
 # Logs
 logs
 *.log

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>aria-live test bed</title>
+  </head>
+  <body>
+    <h1>aria-live test bed</h1>
+    <p>
+      Run the <strong>AriaLiveObserver</strong> bookmarklet, then fire each case. The heading of each case says what a screen reader
+      should do; the monitor panel should agree.
+    </p>
+
+    <h2>Explicit politeness</h2>
+    <section>
+      <h3>Polite text swap — announces the changed text only</h3>
+      <button type="button" id="polite-swap">Update</button>
+      <div aria-live="polite" id="polite-region">Page <span id="polite-count">1</span> of 5</div>
+    </section>
+
+    <section>
+      <h3>Assertive text swap — interrupts</h3>
+      <button type="button" id="assertive-swap">Update</button>
+      <div aria-live="assertive" id="assertive-region">Idle</div>
+    </section>
+
+    <section>
+      <h3>aria-live="off" — never announces</h3>
+      <button type="button" id="off-swap">Update</button>
+      <div aria-live="off" id="off-region">Idle</div>
+    </section>
+
+    <h2>Implicit live roles</h2>
+    <section>
+      <h3>role="alert" inserted already populated — assertive, atomic, screen-reader dependent</h3>
+      <button type="button" id="alert-insert">Show toast</button>
+      <div id="alert-host"></div>
+    </section>
+
+    <section>
+      <h3>role="status" — polite and atomic without any aria-live</h3>
+      <button type="button" id="status-update">Save</button>
+      <div role="status" id="status-region">Not saved</div>
+    </section>
+
+    <section>
+      <h3>role="log" — polite, non-atomic; only the new row announces</h3>
+      <button type="button" id="log-append">Append row</button>
+      <div role="log" id="log-region"></div>
+    </section>
+
+    <section>
+      <h3>&lt;output&gt; — implicit status region</h3>
+      <button type="button" id="output-update">Calculate</button>
+      <output id="output-region">0</output>
+    </section>
+
+    <h2>Atomicity and relevance</h2>
+    <section>
+      <h3>aria-atomic="true" — whole region announces, not just the digit</h3>
+      <button type="button" id="atomic-swap">Update</button>
+      <div aria-live="polite" aria-atomic="true" id="atomic-region">Cart: <span id="atomic-count">1</span> item</div>
+    </section>
+
+    <section>
+      <h3>Atomic subtree inside a non-atomic region — only that subtree announces in full</h3>
+      <button type="button" id="subtree-swap">Update</button>
+      <div aria-live="polite" id="subtree-region">
+        Header text
+        <p aria-atomic="true">Score: <b id="subtree-score">1</b></p>
+      </div>
+    </section>
+
+    <section>
+      <h3>Removal only — should NOT announce (aria-relevant defaults to "additions text")</h3>
+      <button type="button" id="removal-drop">Remove a row</button>
+      <div aria-live="polite" id="removal-region">
+        <p>row one</p>
+        <p>row two</p>
+        <p>row three</p>
+      </div>
+    </section>
+
+    <section>
+      <h3>aria-relevant="removals" — removals do announce here</h3>
+      <button type="button" id="removals-drop">Remove a row</button>
+      <div aria-live="polite" aria-relevant="removals" id="removals-region">
+        <p>alpha</p>
+        <p>beta</p>
+        <p>gamma</p>
+      </div>
+    </section>
+
+    <h2>Suppression</h2>
+    <section>
+      <h3>aria-busy batch — one announcement on release, not one per write</h3>
+      <button type="button" id="busy-batch">Write 5 rows while busy</button>
+      <div aria-live="polite" aria-atomic="true" id="busy-region"></div>
+    </section>
+
+    <section>
+      <h3>Hidden region — updates but is never announced</h3>
+      <button type="button" id="hidden-update">Update</button>
+      <div aria-live="polite" id="hidden-region" style="display: none">Idle</div>
+    </section>
+
+    <h2>Shadow DOM</h2>
+    <section>
+      <h3>Live region inside an open shadow root — observed</h3>
+      <button type="button" id="shadow-update">Update</button>
+      <div id="shadow-open-host"></div>
+    </section>
+
+    <section>
+      <h3>Live region inside a closed shadow root — cannot be observed</h3>
+      <button type="button" id="shadow-closed-update">Update</button>
+      <div id="shadow-closed-host"></div>
+    </section>
+
+    <script src="./index.ts" type="module"></script>
+  </body>
+</html>
