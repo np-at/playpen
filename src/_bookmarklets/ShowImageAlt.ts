@@ -137,7 +137,7 @@ export default function _main(reset: boolean = false): void {
     scrim.style.pointerEvents = "none";
     document.body.appendChild(scrim);
 
-    drawBox(scrim as HTMLElement, rel_showImageAlt, overlayText ?? "ERROR", style);
+    drawBox(scrim, rel_showImageAlt, overlayText ?? "ERROR", style);
     const selector = finder(el);
     addDisplayItem(overlayText, style, selector);
     // if (alt === "") {

@@ -193,22 +193,18 @@ export function finder(input: Element, options?: Partial<FinderOptions>): string
 
   function attr(input: Element): Knot[] {
     const attrs = Array.from(input.attributes).filter((attr) => config.attr(attr.name, attr.value));
-    return attrs.map(
-      (attr): Knot => ({
-        name: `[${CSS.escape(attr.name)}="${CSS.escape(attr.value)}"]`,
-        penalty: 0.5,
-      }),
-    );
+    return attrs.map((attr): Knot => ({
+      name: `[${CSS.escape(attr.name)}="${CSS.escape(attr.value)}"]`,
+      penalty: 0.5,
+    }));
   }
 
   function classNames(input: Element): Knot[] {
     const names = Array.from(input.classList).filter(config.className);
-    return names.map(
-      (name): Knot => ({
-        name: "." + CSS.escape(name),
-        penalty: 1,
-      }),
-    );
+    return names.map((name): Knot => ({
+      name: "." + CSS.escape(name),
+      penalty: 1,
+    }));
   }
 
   function tagName(input: Element): Knot | null {

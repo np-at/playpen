@@ -76,10 +76,10 @@ export default {
     },
   },
   build: {
-    target: 'baseline-widely-available',
+    target: "baseline-widely-available",
     sourcemap: true,
     modulePreload: {
-      polyfill: false
+      polyfill: false,
     },
     rollupOptions: {
       input: htmlFiles,
@@ -88,7 +88,6 @@ export default {
     outDir: "../dist",
     emptyOutDir: true,
     chunkSizeWarningLimit: 1000,
-
   },
   server: {
     port: 5922,

@@ -32,7 +32,7 @@ export function levenshtein(s: string, t: string): number {
   let h: number;
   let k: number;
   const p = new Array<number>(n);
-  for (y = 0; y < n; ) {
+  for (y = 0; y < n;) {
     p[y] = ++y;
   }
 

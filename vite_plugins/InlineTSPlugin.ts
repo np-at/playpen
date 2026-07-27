@@ -15,7 +15,7 @@ function cleanCode(c: string) {
 }
 
 const formatAsBookmarklet = (output: OutputFile, encode = true) => {
-  const { text: code,  } = output;
+  const { text: code } = output;
   return (
     "'javascript:" +
     (encode ? encodeURIComponent : (e: string) => e)("(async ()=>{" + cleanCode(code)).replace(/(')/g, "\\$1") +
@@ -33,9 +33,9 @@ async function compile(inputFile: string, minify: boolean, isDebug = false) {
     treeShaking: true,
 
     write: false,
-    sourcemap:  isDebug ? "external" : false,
+    sourcemap: isDebug ? "external" : false,
     sourcesContent: true,
-    format: 'iife',
+    format: "iife",
     platform: "browser",
     splitting: false,
     outdir: "dist/",
@@ -65,12 +65,11 @@ async function compile(inputFile: string, minify: boolean, isDebug = false) {
   });
   const code = buildResult.outputFiles.find((x) => x.path.endsWith(".js"));
 
-  assert(typeof code !== 'undefined', "code should be defined");
+  assert(typeof code !== "undefined", "code should be defined");
 
+  const sourceMapFile = buildResult.outputFiles.find((x) => x.path.endsWith(basename(code.path) + ".map"));
 
-  const sourceMapFile = buildResult.outputFiles.find(x=>x.path.endsWith(basename(code.path) + '.map'))
-
-  return {code:formatAsBookmarklet(code, true), map:sourceMapFile?.text};
+  return { code: formatAsBookmarklet(code, true), map: sourceMapFile?.text };
 }
 
 export default function inlineTS(opts = {}): Plugin<void> {
@@ -117,7 +116,7 @@ export default function inlineTS(opts = {}): Plugin<void> {
       if (!filter(id)) {
         return null;
       }
-      if (!(id in resolved) || typeof resolved[id] === 'undefined') {
+      if (!(id in resolved) || typeof resolved[id] === "undefined") {
         return null;
       }
 

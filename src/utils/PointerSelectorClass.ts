@@ -189,7 +189,7 @@ export class PointerSelector {
     lowerEl?.dispatchEvent(
       new MouseEvent(eventType, {
         bubbles: true,
-        composed: true
+        composed: true,
       }),
     );
 
