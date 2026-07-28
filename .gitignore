@@ -1,6 +1,6 @@
 .eslintcache
 .worktrees/
-
+.pnpm-store/
 __screenshots__/
 .vitest-attachments/
 # Logs
