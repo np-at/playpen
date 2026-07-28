@@ -14,3 +14,7 @@ minimumReleaseAgeExclude:
   - "@types/node@26.1.2"
 onlyBuiltDependencies:
   - esbuild
+overrides:
+  dompurify@<3.4.9: ^3.4.9
+  dompurify@<=3.4.10: ^3.4.11
+  dompurify@<=3.4.11: ^3.4.12
