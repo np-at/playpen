@@ -1,84 +1,102 @@
-import { randomString } from "./stringUtils";
-
-declare global {
-  // noinspection JSUnusedGlobalSymbols
-  interface Window {
-    PointerSelector: PointerSelector;
-  }
-}
+import { activateBookmarklet, type BookmarkletLifecycle } from "./bookmarkletLifecycle";
 
 export class PointerSelector {
-  _pointerSelectorClassName = "phlffobkmklt";
   _pointerSelector: HTMLElement | undefined;
-  _latestCoordinates: { x: number; y: number } = { x: 0, y: 0 };
   _debounceTimer: number | undefined = undefined;
-  private readonly _hoverHandler: ((e: HTMLElement) => void) | undefined;
-  private readonly _clickHandler: ((e: HTMLElement) => boolean) | undefined;
+  private _destroyed = false;
+  private readonly _hoverHandler: ((e: Element) => void) | undefined;
+  private readonly _clickHandler: ((e: Element) => boolean) | undefined;
+  private readonly _lifecycle: BookmarkletLifecycle | undefined;
 
   constructor(
-    readonly clickHandler?: (e: HTMLElement) => boolean,
-    hoverHandler?: (e: HTMLElement) => void,
+    readonly clickHandler?: (e: Element) => boolean,
+    hoverHandler?: (e: Element) => void,
+    lifecycle?: BookmarkletLifecycle,
   ) {
-    this._pointerSelectorClassName = randomString(16);
     this._clickHandler = clickHandler;
     this._hoverHandler = hoverHandler;
-    if (!this.createPointerSelector(this._clickHandler)) throw new Error("Failed to create pointer selector, already exists");
+    this._lifecycle = lifecycle;
+    this.createPointerSelector();
 
-    document.addEventListener("mouseover", this.mouseoverHandler, {
-      passive: false,
-      once: false,
-      capture: false,
-    });
+    if (lifecycle === undefined) {
+      document.addEventListener("pointermove", this.pointermoveHandler, { capture: true });
+      document.addEventListener("keydown", this.keydownHandler, { capture: true });
+      if (this._clickHandler !== undefined) document.addEventListener("click", this.clickHandlerResolver, { capture: true });
+    } else {
+      lifecycle.listen(document, "pointermove", this.pointermoveHandler as EventListener, { capture: true });
+      lifecycle.listen(document, "keydown", this.keydownHandler as EventListener, { capture: true });
+      if (this._clickHandler !== undefined) {
+        lifecycle.listen(document, "click", this.clickHandlerResolver as EventListener, { capture: true });
+      }
+      lifecycle.addCleanup(this.destroyResources);
+    }
   }
 
-  private readonly mouseoverHandler = (e: MouseEvent): void => {
-    const target = e.target as HTMLElement;
-    // if (target === document.firstElementChild) return;
+  private readonly pointermoveHandler = (e: PointerEvent): void => {
+    if (this._destroyed) return;
+    if ((e.target as Node | null)?.nodeType !== Node.ELEMENT_NODE) return;
+    const target = e.target as Element;
     this.adjustPointerSelector(target);
-    this._hoverHandler?.(target);
+    if (this._hoverHandler === undefined) return;
+    if (this._debounceTimer !== undefined) window.clearTimeout(this._debounceTimer);
+    this._debounceTimer = window.setTimeout(() => {
+      this._debounceTimer = undefined;
+      if (!this._destroyed) this._hoverHandler?.(target);
+    }, 100);
+  };
+
+  private readonly keydownHandler = (event: KeyboardEvent): void => {
+    if (event.key === "Escape") this.destroy();
+  };
+
+  destroy(): void {
+    if (this._lifecycle?.active === true) {
+      this._lifecycle.teardown();
+      return;
+    }
+    this.destroyResources();
+  }
+
+  private readonly destroyResources = (): void => {
+    if (this._destroyed) return;
+    this._destroyed = true;
+    document.removeEventListener("pointermove", this.pointermoveHandler, true);
+    document.removeEventListener("keydown", this.keydownHandler, true);
+    document.removeEventListener("click", this.clickHandlerResolver, true);
+    if (this._debounceTimer !== undefined) {
+      window.clearTimeout(this._debounceTimer);
+      this._debounceTimer = undefined;
+    }
+    this._pointerSelector?.remove();
   };
 
   private readonly clickHandlerResolver = (e: MouseEvent): void => {
     e.stopImmediatePropagation();
     e.preventDefault();
-    const t = this.getTargetFromCachedCoords(e);
-    // console.debug("clickHandlerResolver target", t)
-    if (t === document.firstElementChild) {
+    const target = e.composedPath().find((candidate) => (candidate as Node).nodeType === Node.ELEMENT_NODE) as Element | undefined;
+    if (target === document.firstElementChild) {
       console.debug("Target is document html, allowing retry Source Event: ", e);
       return;
     }
-    if (!t) {
+    if (target === undefined) {
       console.error("Target is undefined. Source Event: ", e);
       throw new Error("Target is undefined");
     }
     let remove;
     try {
-      // `elementFromPoint` legitimately returns non-HTML elements (SVG icons, MathML),
-      // so we must not assert `t instanceof HTMLElement` here: throwing lands in the
-      // catch below, sets `remove = true` and tears the selector down without ever
-      // invoking the click handler.
-      remove = this._clickHandler?.(t as HTMLElement);
+      remove = this._clickHandler?.(target);
     } catch (e) {
       console.error(e);
       remove = true;
     } finally {
       if (remove) {
-        document.getElementById(this._pointerSelectorClassName)?.removeEventListener("click", this.clickHandlerResolver);
-        document
-          .getElementById(this._pointerSelectorClassName)
-          ?.removeEventListener("mouseover", this.pointerSelectorMouseEventForwarder);
-        document.getElementById(this._pointerSelectorClassName)?.remove();
+        this.destroy();
       }
     }
   };
 
-  private readonly adjustPointerSelector = (target: HTMLElement): void => {
+  private readonly adjustPointerSelector = (target: Element): void => {
     const { x: x1, y: y1, height, width } = target.getBoundingClientRect();
-    // const y2 = y1 + height;
-    // const x2 = x1 + width;
-    // const pointerSelector = document.getElementById(
-    //   this._pointerSelectorClassName
-    // ) as HTMLElement;
     if (!this._pointerSelector) throw new Error("Pointer selector does not exist");
     this._pointerSelector.style.top = `${(y1 + window.scrollY).toString()}px`;
     this._pointerSelector.style.left = `${(x1 + window.scrollX).toString()}px`;
@@ -86,37 +104,9 @@ export class PointerSelector {
     this._pointerSelector.style.height = `${height.toString()}px`;
   };
 
-  private readonly getTargetFromCachedCoords: (sourceEvent: MouseEvent) => Element | null = (sourceEvent) => {
-    if (!this._pointerSelector) throw new Error("Pointer selector does not exist");
-    this._pointerSelector.style.display = "none";
-    this._pointerSelector.remove();
-    const t = document.elementFromPoint(
-      this._latestCoordinates.x - (sourceEvent.view?.scrollX ?? 0),
-      this._latestCoordinates.y - (sourceEvent.view?.scrollY ?? 0),
-    );
-    this._pointerSelector.style.display = "block";
-    document.body.appendChild(this._pointerSelector);
-    if (!t) {
-      console.error("Target is undefined", this._latestCoordinates);
-    }
-    return t;
-    // if (t instanceof HTMLElement) {
-    //   return t;
-    // }
-    // console.error("Target is not an HTMLElement", t);
-    // throw new Error("Target is not an HTMLElement");
-  };
-
-  private readonly createPointerSelector = (clickHandler: ((e: HTMLElement) => boolean) | undefined): boolean => {
-    if (this._pointerSelector) {
-      console.warn("Pointer selector already exists");
-      return false;
-    }
-
+  private readonly createPointerSelector = (): void => {
     this._pointerSelector = document.createElement("div");
-    this._pointerSelector.className = this._pointerSelectorClassName;
     this._pointerSelector.style.position = "absolute";
-    this._pointerSelector.id = this._pointerSelectorClassName;
     this._pointerSelector.style.zIndex = "999999999999";
     this._pointerSelector.style.border = "2px solid red";
     this._pointerSelector.style.outline = "2px solid orange";
@@ -124,81 +114,26 @@ export class PointerSelector {
     this._pointerSelector.style.opacity = "0.5";
     this._pointerSelector.style.margin = "0";
     this._pointerSelector.style.padding = "0";
-    if (typeof clickHandler === "function") {
-      this._pointerSelector.style.pointerEvents = "auto";
-      this._pointerSelector.addEventListener("click", this.clickHandlerResolver, {
-        passive: false,
-        once: false,
-        capture: true,
-      });
-      this._pointerSelector.addEventListener("mousemove", this.pointerSelectorMouseEventForwarder, {
-        passive: false,
-        once: false,
-        capture: true,
-      });
-      this._pointerSelector.addEventListener("mouseover", this.pointerSelectorMouseEventForwarder, {
-        passive: false,
-        once: false,
-        capture: true,
-      });
-    } else {
-      this._pointerSelector.style.pointerEvents = "none";
-    }
+    this._pointerSelector.style.pointerEvents = "none";
+    if (this._lifecycle !== undefined) this._lifecycle.ownNode(this._pointerSelector);
     this._pointerSelector = document.body.appendChild(this._pointerSelector);
-    return true;
-  };
-
-  private readonly pointerSelectorMouseEventForwarder = (e: MouseEvent): void => {
-    // _pointerSelector.style.pointerEvents = "none";
-
-    e.stopPropagation();
-    // console.debug("pointerSelectorMouseEventForwarder", e);
-    // forwardEvent(e)
-    this._latestCoordinates = {
-      x: e.clientX + (e.view?.scrollX ?? 0),
-      y: e.clientY + (e.view?.scrollY ?? 0),
-    };
-    if (this._debounceTimer) {
-      clearTimeout(this._debounceTimer);
-    }
-    if (e.type === "click") {
-      this.forwardEvent(e);
-    } else {
-      this._debounceTimer = window.setTimeout(() => {
-        this.forwardEvent(e);
-      }, 100);
-    }
-  };
-
-  private readonly forwardEvent = (e: MouseEvent): void => {
-    // _pointerSelector.style.display = "none";
-    const lowerEl = this.getTargetFromCachedCoords(e);
-
-    let eventType: string;
-    switch (e.type) {
-      case "click":
-      case "mouseover":
-      case "mousemove":
-        eventType = "mouseover";
-        break;
-      default:
-        console.warn("hit default with event, ", e);
-        return;
-    }
-
-    lowerEl?.dispatchEvent(
-      new MouseEvent(eventType, {
-        bubbles: true,
-        composed: true,
-      }),
-    );
-
-    this._debounceTimer = undefined;
   };
 }
 
-export function CreatePointerSelector(clickCallback?: (t: HTMLElement) => boolean, hoverCallback?: (t: HTMLElement) => void): void {
-  window.PointerSelector = new PointerSelector(clickCallback, hoverCallback);
+export function CreatePointerSelector(
+  toolName: string,
+  clickCallback?: (t: Element) => boolean,
+  hoverCallback?: (t: Element) => void,
+): PointerSelector | null {
+  const lifecycle = activateBookmarklet(toolName);
+  if (lifecycle === null) return null;
+
+  try {
+    return new PointerSelector(clickCallback, hoverCallback, lifecycle);
+  } catch (error) {
+    lifecycle.teardown();
+    throw error;
+  }
 }
 
 export { CreatePointerSelector as default };

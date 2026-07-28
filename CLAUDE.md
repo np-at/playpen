@@ -67,7 +67,7 @@ Consequences to keep in mind when editing `_bookmarklets/`:
 
 ### Shared utilities
 
-`src/utils/` is the common layer both bookmarklets and demos pull from: `assert.ts` (throwing type-narrowing assert), `finder.ts` / `DOMPath.ts` (CSS-selector generation for an element), `pointerSelector.ts` + `PointerSelectorClass.ts` (click-to-pick-an-element overlays), `applyToShadows.ts` / `digIntoIframes.ts` (traversing shadow DOM and same-origin iframes — most a11y checks need both), `drawUtils.ts` / `makeDraggableOverlay.ts` (on-page visual overlays), `diffAccName.ts` (Levenshtein, for accessible-name vs visible-label mismatch).
+`src/utils/` is the common layer both bookmarklets and demos pull from: `assert.ts` (throwing type-narrowing assert), `finder.ts` / `DOMPath.ts` (CSS-selector generation for an element), `PointerSelectorClass.ts` (click-to-pick-an-element overlays), `applyToShadows.ts` / `digIntoIframes.ts` (traversing shadow DOM and same-origin iframes — most a11y checks need both), `drawUtils.ts` / `makeDraggableOverlay.ts` (on-page visual overlays), `diffAccName.ts` (Levenshtein, for accessible-name vs visible-label mismatch).
 
 A11y facts come from `aria-api` (role/name/description computation) and `axe-core` (rule runs).
 
