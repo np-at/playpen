@@ -5,34 +5,81 @@
     <link rel="icon" type="image/svg+xml" href="../public/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link rel="stylesheet" href="styles/global.css" />
+    <link rel="stylesheet" href="styles/reset.css" />
+    <link rel="stylesheet" href="styles/home.css" />
 
-    <title>Vite + TS</title>
+    <title>a11y playpen</title>
+
+    <!-- applied before first paint so a pinned theme doesn't flash the other one -->
+    <script>
+      try {
+        const stored = localStorage.getItem("theme");
+        if (stored === "light" || stored === "dark") document.documentElement.dataset.theme = stored;
+      } catch {
+        /* storage blocked — fall back to the OS preference */
+      }
+    </script>
   </head>
   <body>
-    <div class="p-table">
-      <div class="p-row">
-        <div class="p-cell">
-          <span>content</span>
+    <p class="visually-hidden" role="status" id="theme-status"></p>
+    <header class="app-bar">
+      <span class="app-bar__mark" aria-hidden="true">a</span>
+      <h1 class="app-bar__title">a11y playpen</h1>
+      <span class="app-bar__spacer"></span>
+      <a class="app-bar__link" href="#bookmarklets">Bookmarklets</a>
+      <a class="app-bar__link" href="#demos">Demos</a>
+      <button type="button" class="theme-toggle" id="theme-toggle">
+        <span class="theme-toggle__dot" aria-hidden="true"></span>
+        <span id="theme-toggle-label">Theme: auto</span>
+      </button>
+    </header>
+
+    <section class="hero" aria-label="Introduction">
+      <div class="hero__inner">
+        <p class="hero__eyebrow">Accessibility tooling</p>
+        <p class="hero__title">Drag a tool to your bookmarks bar.</p>
+        <p class="hero__sub">
+          A no-framework pile of accessibility bookmarklets and demo pages. Every bookmarklet is a self-contained
+          <code>javascript:</code> URL — drop it on any page and it runs.
+        </p>
+        <hr class="hero__rule" />
+      </div>
+    </section>
+
+    <div class="shell">
+      <nav class="card" aria-labelledby="toc-title">
+        <div class="card__header">
+          <h2 class="card__title" id="toc-title">On this page</h2>
         </div>
-      </div>
+        <ul id="toc" class="nav-list" role="list">
+          <li><a class="nav-list__link" href="#bookmarklets">Bookmarklets</a></li>
+          <li><a class="nav-list__link" href="#demos">Demo pages</a></li>
+        </ul>
+      </nav>
+
+      <main>
+        <section class="section" id="bookmarklets" aria-labelledby="bookmarklets-title">
+          <div class="section__head">
+            <h2 class="section__title" id="bookmarklets-title">Bookmarklets</h2>
+            <span class="section__count" id="bookmarklet-count">0</span>
+          </div>
+          <p class="section__note">Drag any link onto your bookmarks bar, then click it while on the page you want to inspect.</p>
+          <div id="main" class="tile-grid"></div>
+        </section>
+
+        <section class="section" id="demos" aria-labelledby="demos-title">
+          <div class="section__head">
+            <h2 class="section__title" id="demos-title">Demo pages</h2>
+            <span class="section__count" id="demo-count">0</span>
+          </div>
+          <p class="section__note">Standalone pages that reproduce a particular behaviour worth poking at.</p>
+          <div id="demo-grid" class="tile-grid"></div>
+        </section>
+      </main>
     </div>
-    <div class="body">
-      <div class="sidebar">
-        <nav>
-          <h2>Pages</h2>
-          <ul id="toc" role="list"></ul>
-        </nav>
-      </div>
-      <main id="main" class="main"></main>
-    </div>
-    <!--    <div class="row" >-->
-    <!--      <a href="ts:./_bookmarklets/fcs.ts" >tests</a>-->
-    <!--    </div>-->
-    <!--    <div id="app"></div>-->
-    <!--    <div class="row">-->
-    <!--      <a href="./demos/safari_oddities/index.html">Safari Oddities</a>-->
-    <!--    </div>-->
+
+    <footer class="footer">Built with Vite · no framework, no build-time magic beyond the bookmarklet inliner.</footer>
+
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

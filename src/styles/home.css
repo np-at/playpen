@@ -1,0 +1,421 @@
+/* 2016-era material-flavoured flat design for the homepage. */
+
+/*
+  Theming: every token is a light-dark() pair, so the only switch is `color-scheme` on :root.
+  Default is `light dark` (follow the OS); the toggle stamps data-theme to pin one side.
+*/
+:root {
+  color-scheme: light dark;
+
+  /* accents */
+  --indigo: light-dark(#3f51b5, #7986cb);
+  --indigo-dark: light-dark(#303f9f, #9fa8da);
+  --indigo-light: light-dark(#c5cae9, #4a5285);
+  --teal: light-dark(#009688, #4db6ac);
+  --teal-dark: light-dark(#00796b, #80cbc4);
+  --pink: light-dark(#ff4081, #ff80ab);
+
+  /* surfaces */
+  --grey-bg: light-dark(#eceff1, #12161a);
+  --surface: light-dark(#fff, #1e242b);
+  --surface-border: light-dark(transparent, rgba(255, 255, 255, 0.09));
+  --app-bar-bg: light-dark(#3f51b5, #1a1f38);
+  --footer-bg: light-dark(#263238, #0c1013);
+  --hero-from: light-dark(#303f9f, #1c2352);
+  --hero-to: light-dark(#009688, #0b4f4a);
+  --hover-bg: light-dark(#f5f5f5, rgba(255, 255, 255, 0.06));
+
+  /* ink */
+  --ink: light-dark(rgba(0, 0, 0, 0.87), #e4e8ee);
+  /* material's 0.54 / 0.38 inks fail WCAG AA on white; nudged to values that pass on both surfaces */
+  --ink-secondary: light-dark(#5f6368, #adb6c1);
+  --ink-hint: light-dark(#6e6e6e, #9ba4af);
+  --divider: light-dark(rgba(0, 0, 0, 0.12), rgba(255, 255, 255, 0.14));
+  --on-accent: light-dark(#fff, #12161a);
+
+  /* elevation reads as shadow in light, as a lifted surface + hairline in dark */
+  --elev-1:
+    0 1px 3px light-dark(rgba(0, 0, 0, 0.24), rgba(0, 0, 0, 0.6)), 0 1px 2px light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.5));
+  --elev-2:
+    0 3px 6px light-dark(rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0.55)), 0 3px 6px light-dark(rgba(0, 0, 0, 0.23), rgba(0, 0, 0, 0.5));
+  --elev-4:
+    0 10px 20px light-dark(rgba(0, 0, 0, 0.19), rgba(0, 0, 0, 0.6)), 0 6px 6px light-dark(rgba(0, 0, 0, 0.23), rgba(0, 0, 0, 0.55));
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  color: var(--ink);
+  background-color: var(--grey-bg);
+  font-family: Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--grey-bg);
+}
+
+*:focus-visible {
+  outline: 3px solid var(--pink);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* pink-on-indigo is too low contrast for a focus ring, so the app bar rings in white */
+.app-bar *:focus-visible {
+  outline-color: #fff;
+}
+
+/* ---------- app bar ---------- */
+
+.app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 64px;
+  padding: 0 24px;
+  background: var(--app-bar-bg);
+  color: #fff;
+  box-shadow: var(--elev-2);
+}
+
+.app-bar__mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 2px;
+  background: var(--pink);
+  /* dark ink in both themes — white on #ff4081 is only ~3.2:1, and axe skips this node because it's aria-hidden */
+  color: #12161a;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.app-bar__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.app-bar__spacer {
+  flex: 1;
+}
+
+.app-bar__link {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 2px;
+  transition: background-color 0.2s var(--ease);
+}
+
+.app-bar__link:hover,
+.app-bar__link:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+  background: transparent;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 0.2s var(--ease),
+    border-color 0.2s var(--ease);
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: #fff;
+}
+
+.theme-toggle__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--pink);
+}
+
+/* ---------- hero ---------- */
+
+.hero {
+  padding: 56px 24px 56px;
+  background: linear-gradient(135deg, var(--hero-from) 0%, var(--hero-to) 100%);
+  color: #fff;
+}
+
+.hero__inner {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.hero__eyebrow {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.hero__title {
+  margin: 0 0 12px;
+  font-size: 45px;
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.hero__sub {
+  margin: 0;
+  max-width: 46em;
+  font-size: 18px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.hero__rule {
+  width: 64px;
+  height: 4px;
+  margin: 24px 0 0;
+  border: 0;
+  background: var(--pink);
+}
+
+/* ---------- layout ---------- */
+
+.shell {
+  max-width: 1120px;
+  margin: 32px auto 64px;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- cards ---------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: 2px;
+  box-shadow: var(--elev-1);
+}
+
+.card__header {
+  padding: 16px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.card__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+}
+
+/* ---------- sidebar nav list ---------- */
+
+.nav-list {
+  margin: 0;
+  padding: 8px 0;
+  list-style: none;
+}
+
+.nav-list__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: var(--ink);
+  font-size: 15px;
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition:
+    background-color 0.2s var(--ease),
+    border-color 0.2s var(--ease);
+}
+
+.nav-list__link::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--indigo-light);
+  transition: background-color 0.2s var(--ease);
+}
+
+.nav-list__link:hover,
+.nav-list__link:focus-visible {
+  background: var(--hover-bg);
+  border-left-color: var(--teal);
+  color: var(--teal-dark);
+}
+
+.nav-list__link:hover::before,
+.nav-list__link:focus-visible::before {
+  background: var(--teal);
+}
+
+/* ---------- section headings ---------- */
+
+.section + .section {
+  margin-top: 32px;
+}
+
+.section__head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0 0 4px;
+  color: var(--ink);
+}
+
+.section__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 400;
+}
+
+.section__count {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--indigo);
+  color: var(--on-accent);
+}
+
+.section__note {
+  margin: 0 0 16px;
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+
+/* ---------- bookmarklet tiles ---------- */
+
+.tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: 2px;
+  border-top: 4px solid var(--teal);
+  box-shadow: var(--elev-1);
+  transition:
+    box-shadow 0.28s var(--ease),
+    transform 0.28s var(--ease);
+}
+
+.tile:nth-child(3n) {
+  border-top-color: var(--indigo);
+}
+
+.tile:nth-child(3n + 2) {
+  border-top-color: var(--pink);
+}
+
+.tile:hover,
+.tile:focus-within {
+  box-shadow: var(--elev-4);
+  transform: translateY(-2px);
+}
+
+.tile__link {
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: grab;
+  overflow-wrap: anywhere;
+}
+
+.tile__link:hover,
+.tile__link:focus-visible {
+  color: var(--indigo-dark);
+}
+
+.tile__hint {
+  margin-top: auto;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-hint);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- footer ---------- */
+
+.footer {
+  padding: 24px;
+  background: var(--footer-bg);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  text-align: center;
+}

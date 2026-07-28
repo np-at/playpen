@@ -54,45 +54,123 @@ void import("./_bookmarklets/FocusStyleCheck.ts?inlineTS").then((x) => {
   makeLink(x.default, "FocusStyleCheck");
 });
 
-// const root = document.querySelector("#root");
-// const root = document.createElement("div");
-// root.setAttribute("id", "root");
-// document.body.appendChild(root);
-const root = document.getElementById("main");
+/* ---------- theme ---------- */
 
-const tocRoot = document.getElementById("toc");
-if (!tocRoot) throw new Error("TOC root not found");
+// "auto" follows the OS; light/dark pin one side. All the CSS reads off `color-scheme`,
+// so switching is nothing but stamping (or clearing) data-theme on <html>.
+type Theme = "auto" | "light" | "dark";
+const THEMES: readonly Theme[] = ["auto", "light", "dark"];
+const isTheme = (x: string | null): x is Theme => THEMES.includes(x as Theme);
+
+const themeButton = document.getElementById("theme-toggle");
+const themeLabel = document.getElementById("theme-toggle-label");
+const themeStatus = document.getElementById("theme-status");
+assert(themeButton !== null, "Theme toggle not found");
+assert(themeLabel !== null, "Theme toggle label not found");
+assert(themeStatus !== null, "Theme status not found");
+
+// localStorage throws outright in some privacy modes; a broken toggle shouldn't take the page with it
+const storage = {
+  read(): string | null {
+    try {
+      return localStorage.getItem("theme");
+    } catch {
+      return null;
+    }
+  },
+  write(value: Theme): void {
+    try {
+      if (value === "auto") localStorage.removeItem("theme");
+      else localStorage.setItem("theme", value);
+    } catch {
+      /* not persisted; the toggle still works for this page view */
+    }
+  },
+};
+
+const stored = storage.read();
+let theme: Theme = isTheme(stored) ? stored : "auto";
+
+const applyTheme = (next: Theme, announce: boolean): void => {
+  theme = next;
+  if (next === "auto") delete document.documentElement.dataset["theme"];
+  else document.documentElement.dataset["theme"] = next;
+  storage.write(next);
+  themeLabel.innerText = `Theme: ${next}`;
+  if (announce) {
+    const resolved = next === "auto" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : next;
+    themeStatus.innerText = `Theme set to ${next}${next === "auto" ? ` (currently ${resolved})` : ""}.`;
+  }
+};
+
+applyTheme(theme, false);
+themeButton.addEventListener("click", () => {
+  applyTheme(THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length] ?? "auto", true);
+});
+
+/* ---------- content ---------- */
+
+const root = document.getElementById("main");
+const bookmarkletCount = document.getElementById("bookmarklet-count");
+
+const demoGrid = document.getElementById("demo-grid");
+const demoCount = document.getElementById("demo-count");
+assert(demoGrid !== null, "Demo grid not found");
+
+/** "demos/sticky-banner" -> "Sticky Banner", "demos/radiogroups/radiogroup_test" -> "Radiogroup Test" */
+const prettify = (path: string): string =>
+  (path.split("/").pop() ?? path)
+    .replaceAll(/[_-]+/g, " ")
+    .replaceAll(/([a-z\d])([A-Z])/g, "$1 $2")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+let demos = 0;
 for (const key in htmlFiles) {
   const short = key.replace(/\/?(?:index)?\.html$/, "");
   if (short === "") {
     continue;
   }
-  const d = document.createElement("li");
-  // d.classList.add("row");
-  const a = document.createElement("a");
-  a.href = key;
-  a.innerText = short;
-  d.appendChild(a);
-  tocRoot.appendChild(d);
+  demos++;
+
+  const tile = document.createElement("div");
+  tile.className = "tile";
+  const tileLink = document.createElement("a");
+  tileLink.className = "tile__link";
+  tileLink.href = key;
+  tileLink.innerText = prettify(short);
+  const hint = document.createElement("span");
+  hint.className = "tile__hint";
+  hint.innerText = short;
+  tile.append(tileLink, hint);
+  demoGrid.appendChild(tile);
 }
+if (demoCount) demoCount.innerText = String(demos);
 
 const makeLink = (x: string, name: string): void => {
   assert(root !== null, "Root element not found");
-  const rowDiv = document.createElement("div");
-  rowDiv.classList.add("row");
+  const tile = document.createElement("div");
+  tile.classList.add("tile");
   const anchorElement = document.createElement("a");
+  anchorElement.classList.add("tile__link");
   anchorElement.href = x;
   anchorElement.innerText = name;
   anchorElement.id = short_uuid();
-  rowDiv.appendChild(anchorElement);
+  anchorElement.draggable = true;
+  const hint = document.createElement("span");
+  hint.className = "tile__hint";
+  hint.innerText = "drag to bookmarks";
+  tile.append(anchorElement, hint);
+  tile.dataset["name"] = name;
 
-  // Insert the new link in sorted order
+  // Insert the new tile in sorted order
   // could optimize by doing a binary search, but since the number of links is likely small, a linear search is probably fine
-  const existingLinks = [...root.children].sort((a, b) => a.textContent.localeCompare(b.textContent));
-  const insertIndex = existingLinks.findIndex((child) => child.textContent.localeCompare(name) > 0);
+  const sortKey = (el: Element): string => (el instanceof HTMLElement ? (el.dataset["name"] ?? "") : "");
+  const existingLinks = [...root.children].sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+  const insertIndex = existingLinks.findIndex((child) => sortKey(child).localeCompare(name) > 0);
   if (insertIndex === -1) {
-    root.appendChild(rowDiv);
+    root.appendChild(tile);
   } else {
-    root.insertBefore(rowDiv, existingLinks[insertIndex]);
+    root.insertBefore(tile, existingLinks[insertIndex]);
   }
+  if (bookmarkletCount) bookmarkletCount.innerText = String(root.children.length);
 };
