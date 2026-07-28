@@ -1,4 +1,5 @@
 .eslintcache
+.worktrees/
 
 __screenshots__/
 .vitest-attachments/
