@@ -32,10 +32,10 @@ const Labelling = {
 interface LabelledElement {
   name: string | null;
   labellingMethod: (typeof Labelling)[keyof typeof Labelling];
-  target: HTMLElement;
+  target: Element;
 }
 
-function IdentifyExplicitNames(target: HTMLElement): boolean {
+function IdentifyExplicitNames(target: Element): boolean {
   console.log("target: ", target);
   console.log("name: ", getName(target));
   const hasAriaLabel: LabelledElement[] = Array.from(target.querySelectorAll("[aria-label]")).map((x) => ({
@@ -79,4 +79,4 @@ function IdentifyExplicitNames(target: HTMLElement): boolean {
   return true;
 }
 
-CreatePointerSelector(IdentifyExplicitNames);
+CreatePointerSelector("identify-explicit-names", IdentifyExplicitNames);

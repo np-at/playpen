@@ -2,27 +2,19 @@ import { getName } from "aria-api";
 import { drawBox, type DrawStyleProps, ensureBoundingStyleAvailable } from "../utils/drawUtils";
 import { makeDraggableDisplay } from "../utils/makeDraggableOverlay";
 import { finder } from "../utils/finder";
+import { activateBookmarklet, type BookmarkletLifecycle } from "../utils/bookmarkletLifecycle";
 
-const display_div_id = "show-image-alt-display" as const;
 const rel_showImageAlt = "aria-show-image-alt" as const;
 let _displayDiv: HTMLDivElement | undefined;
-function displayDiv(): HTMLDivElement {
-  if (!_displayDiv) {
-    _displayDiv = (document.getElementById(display_div_id) as HTMLDivElement | null) ?? createDisplayDiv();
+function displayDiv(lifecycle: BookmarkletLifecycle): HTMLDivElement {
+  if (!_displayDiv?.isConnected) {
+    _displayDiv = createDisplayDiv(lifecycle);
   }
   return _displayDiv;
 }
 
-function _reset(): void {
-  console.debug("resetting");
-  const s = Array.from(document.querySelectorAll(`[rel=${rel_showImageAlt}]`));
-  // console.log("found", s)
-  s.forEach((el) => {
-    el.remove();
-  });
-}
-function createDisplayDiv(): HTMLDivElement {
-  const displayDiv = makeDraggableDisplay();
+function createDisplayDiv(lifecycle: BookmarkletLifecycle): HTMLDivElement {
+  const displayDiv = makeDraggableDisplay(lifecycle);
   displayDiv.id = "show-image-alt-display";
   displayDiv.style.minWidth = "200px";
   displayDiv.style.minHeight = "20px";
@@ -40,8 +32,8 @@ function createDisplayDiv(): HTMLDivElement {
   document.body.appendChild(displayDiv);
   return displayDiv;
 }
-function addDisplayItem(text: string, style: DrawStyleProps, scrollTo?: string): void {
-  const display = displayDiv();
+function addDisplayItem(lifecycle: BookmarkletLifecycle, text: string, style: DrawStyleProps, scrollTo?: string): void {
+  const display = displayDiv(lifecycle);
   const item = document.createElement("li");
   item.innerText = text;
   Object.assign(item.style, style);
@@ -63,15 +55,11 @@ type AltTextErr = {
  * Testing comment
  * @param reset
  */
-export default function _main(reset: boolean = false): void {
-  if (reset) {
-    _reset();
-  }
-
-  ensureBoundingStyleAvailable();
+export default function _main(lifecycle: BookmarkletLifecycle): void {
+  ensureBoundingStyleAvailable(lifecycle);
 
   const errors: AltTextErr[] = [];
-  Array.from(document.querySelectorAll("img, svg, [role=img]")).forEach((el) => {
+  Array.from(document.querySelectorAll("img, svg, [role=img]")).forEach((el, index) => {
     let overlayText: string;
 
     const ATName = getName(el);
@@ -102,22 +90,15 @@ export default function _main(reset: boolean = false): void {
         overlayText = `WARN: accessible name does not match alt text\n Alt: ${alt}\n Accessible Name: ${ATName}`;
       }
     }
-    const { x, y } = el.getBoundingClientRect();
-    const scrim = document.createElement("div");
-    scrim.setAttribute("rel", rel_showImageAlt);
-    scrim.style.left = `${x.toString(10)}px`;
-    scrim.style.top = `${y.toString(10)}px`;
-    scrim.style.width = `${el.clientWidth.toString(10)}px`;
-    scrim.style.height = `${el.clientHeight.toString(10)}px`;
-    scrim.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-    scrim.style.position = "absolute";
-    scrim.style.zIndex = "9999";
-    scrim.style.pointerEvents = "none";
-    document.body.appendChild(scrim);
-
-    drawBox(scrim, rel_showImageAlt, overlayText, style);
+    drawBox(lifecycle, el, {
+      append: index !== 0,
+      content: overlayText,
+      group: rel_showImageAlt,
+      style,
+      utilityName: rel_showImageAlt,
+    });
     const selector = finder(el);
-    addDisplayItem(overlayText, style, selector);
+    addDisplayItem(lifecycle, overlayText, style, selector);
     // if (alt === "") {
     // }
     // if (alt === null || alt === undefined) {
@@ -131,20 +112,5 @@ export default function _main(reset: boolean = false): void {
   }
 }
 
-if (document.querySelector(`[rel=${rel_showImageAlt}]`)) {
-  _reset();
-  _displayDiv?.remove();
-} else {
-  // probably could have been done with clever use of pseudo-elements
-  // but, I'm not that clever
-  let _timer: number | undefined;
-  window.addEventListener("resize", () => {
-    if (_timer) {
-      window.clearTimeout(_timer);
-    }
-    _timer = window.setTimeout(() => {
-      _main(true);
-    }, 500);
-  });
-  _main();
-}
+const lifecycle = activateBookmarklet("show-image-alt");
+if (lifecycle !== null) _main(lifecycle);

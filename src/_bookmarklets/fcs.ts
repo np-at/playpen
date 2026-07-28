@@ -1,6 +1,10 @@
 import { getDescription, getName, getRole } from "aria-api";
+import { activateBookmarklet, type BookmarkletLifecycle } from "../utils/bookmarkletLifecycle";
+import { drawFocusBox, ensureBoundingStyleAvailable } from "../utils/drawUtils";
 
 const focusTrace: number[][] = [];
+const lifecycle: BookmarkletLifecycle | null = activateBookmarklet("focus-trace");
+let traceSvg: SVGSVGElement | undefined;
 
 const ariaDebug: (el: Element) => void = (el: Element) => {
   const role = getRole(el);
@@ -25,22 +29,10 @@ const ariaDebug: (el: Element) => void = (el: Element) => {
     `);
 };
 
-function addBoundingStyle(): void {
-  const boundRule =
-    "div.bounding-rect { pointer-events: none; border: 3px solid red; border-radius: 4px 4px 4px 4px; position: fixed; z-index: 10000;}";
-  const sht: CSSStyleSheet = document.styleSheets[0];
-  try {
-    sht.insertRule(boundRule, sht.cssRules.length);
-  } catch {
-    const styleSheet = document.createElement("style");
-    styleSheet.innerText = boundRule.valueOf();
-    document.head.appendChild(styleSheet);
-  }
-}
-
 function handleFocusChange(): void {
+  if (lifecycle === null) return;
   clearTimeout(selectionChangeTimer);
-  selectionChangeTimer = window.setTimeout(drawFocusBoxes, 100);
+  selectionChangeTimer = lifecycle.timeout(drawFocusBoxes, 100);
   const rect = document.activeElement?.getBoundingClientRect();
   if (!rect) throw new Error("Rect not defined");
   if (rect.top && rect.left) {
@@ -54,20 +46,8 @@ function handleFocusChange(): void {
   drawFocusTraceArrows();
 }
 
-function redrawSelectionBoxes(): void {
-  clearTimeout(redrawTimer);
-  redrawTimer = window.setTimeout(drawFocusBoxes, 300);
-}
-
-function clearCurrentSelectionBoxes(): void {
-  const nodes = document.querySelectorAll("div.bounding-rect, div.segment-rect");
-  for (let i = 0; i < nodes.length; i++) {
-    nodes[i].parentNode?.removeChild(nodes[i]);
-  }
-}
-
 function drawFocusBoxes(): void {
-  clearCurrentSelectionBoxes();
+  if (lifecycle === null) return;
   clearArrowSvgs();
   const selection = document.activeElement;
   if (selection == null) {
@@ -75,16 +55,7 @@ function drawFocusBoxes(): void {
   }
   console.debug(selection);
   ariaDebug(selection);
-  const rect = selection.getBoundingClientRect();
-  if (rect.width && rect.height) {
-    const outline = document.createElement("div");
-    outline.classList.add("bounding-rect");
-    outline.style.top = rect.top.toString(10) + "px";
-    outline.style.left = rect.left.toString(10) + "px";
-    outline.style.width = rect.width.toString(10) + "px";
-    outline.style.height = rect.height.toString(10) + "px";
-    document.body.appendChild(outline);
-  }
+  drawFocusBox(lifecycle, selection);
   // if (rect.top && rect.left)
   //   focusTrace.push([rect.left, rect.top]);
   // console.log("focus array ", focusTrace);
@@ -97,10 +68,10 @@ function clearArrowSvgs(): void {
   //   r.forEach(x => x.remove());
 }
 
-function createArrowSvg(c1: number[], c2: number[], svg: HTMLElement | null): void {
+function createArrowSvg(c1: number[], c2: number[], svg?: SVGSVGElement): SVGSVGElement | undefined {
   const dX = c2[0] - c1[0];
   const dY = c2[1] - c1[1];
-  if (isNaN(dX) || isNaN(dY)) return;
+  if (isNaN(dX) || isNaN(dY)) return svg;
   // create base svg element
 
   // Arrow tail
@@ -130,12 +101,11 @@ function createArrowSvg(c1: number[], c2: number[], svg: HTMLElement | null): vo
     `${c2[0].toString()},${c2[1].toString()} ${x3.toString()},${y3.toString()} ${x4.toString()},${y4.toString()}`,
   );
   triangle.setAttribute("fillcolor", "blue");
-  if (svg == null) {
-    const newSvg: SVGElement = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  if (svg === undefined) {
+    const newSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     newSvg.setAttribute("version", "1.1");
     newSvg.setAttribute("aria-hidden", "true");
     // svg.classList.add("rootFocusSvg");
-    newSvg.setAttribute("id", "rootSvg");
     newSvg.style.position = "absolute";
     newSvg.style.pointerEvents = "none";
     newSvg.style.top = String(0);
@@ -148,11 +118,14 @@ function createArrowSvg(c1: number[], c2: number[], svg: HTMLElement | null): vo
     newSvg.style.overflow = "overlay";
     newSvg.appendChild(triangle);
     newSvg.appendChild(line);
+    lifecycle?.ownNode(newSvg);
     document.body.append(newSvg);
     console.log("line: ", newSvg);
+    return newSvg;
   } else {
     svg.appendChild(triangle);
     svg.appendChild(line);
+    return svg;
   }
 
   // Add completed svg to page
@@ -161,8 +134,7 @@ function createArrowSvg(c1: number[], c2: number[], svg: HTMLElement | null): vo
 function drawFocusTraceArrows(): void {
   // console.log("current array:", focusTrace);
   if (focusTrace.length < 2) return;
-  const svg = document.getElementById("rootSvg");
-  createArrowSvg(focusTrace[focusTrace.length - 2], focusTrace[focusTrace.length - 1], svg);
+  traceSvg = createArrowSvg(focusTrace[focusTrace.length - 2], focusTrace[focusTrace.length - 1], traceSvg);
   // const r = document.querySelector('svg#rootFocusSvg');
   // for (let i = 1; i < focusTrace.length; i++) {
   //   createArrowSvg(focusTrace[i - 1], focusTrace[i], null);
@@ -170,9 +142,8 @@ function drawFocusTraceArrows(): void {
 }
 
 let selectionChangeTimer: number | undefined;
-let redrawTimer: number | undefined;
 
-addBoundingStyle();
-window.addEventListener("focusin", handleFocusChange, { passive: false });
-window.addEventListener("scroll", redrawSelectionBoxes, { passive: false });
-window.addEventListener("resize", redrawSelectionBoxes, { passive: false });
+if (lifecycle !== null) {
+  ensureBoundingStyleAvailable(lifecycle);
+  lifecycle.listen(window, "focusin", handleFocusChange, { passive: false });
+}

@@ -1,17 +1,10 @@
-import { drawBox } from "../utils/drawUtils";
+import { clearCurrentSelectionBoxes, drawBox } from "../utils/drawUtils";
+import { activateBookmarklet, type BookmarkletLifecycle } from "../utils/bookmarkletLifecycle";
 
-const dupBoxId = "dupIdBox";
+const DUPLICATE_OVERLAY_GROUP = "duplicate-id";
 
-function makeDisplay(): HTMLElement {
-  const existingDisplay = document.getElementById("a11y-bookmarklet") as HTMLDialogElement | null;
-  if (existingDisplay) {
-    existingDisplay.show();
-    const wrapper: HTMLDivElement | null = existingDisplay.querySelector("div.content-wrapper");
-    if (!wrapper) throw new Error("existing display's content wrapper not found");
-    wrapper.innerHTML = "";
-    return wrapper;
-  }
-  const display = document.createElement("dialog");
+function makeDisplay(lifecycle: BookmarkletLifecycle): HTMLElement {
+  const display = lifecycle.ownNode(document.createElement("dialog"));
 
   display.style.position = "fixed";
   display.style.top = "0";
@@ -24,8 +17,7 @@ function makeDisplay(): HTMLElement {
   display.style.maxWidth = "400px";
   display.style.overflow = "auto";
   display.style.maxHeight = "20vh";
-  display.id = "a11y-bookmarklet";
-  makeCloseButton(display);
+  makeCloseButton(lifecycle, display);
 
   const contentWrapper = document.createElement("div");
   contentWrapper.classList.add("content-wrapper");
@@ -38,14 +30,12 @@ function makeDisplay(): HTMLElement {
   return contentWrapper;
 }
 
-function cleanUp(ds?: HTMLDialogElement): void {
-  document.querySelectorAll(`#${dupBoxId}`).forEach((x) => {
-    x.remove();
-  });
-  ds?.remove();
+function cleanUp(lifecycle: BookmarkletLifecycle): void {
+  clearCurrentSelectionBoxes(lifecycle);
+  lifecycle.teardown();
 }
 
-function makeCloseButton(display: HTMLDialogElement): HTMLButtonElement {
+function makeCloseButton(lifecycle: BookmarkletLifecycle, display: HTMLDialogElement): HTMLButtonElement {
   const closeButton = document.createElement("button");
   closeButton.innerText = "Close";
   closeButton.style.position = "absolute";
@@ -53,7 +43,7 @@ function makeCloseButton(display: HTMLDialogElement): HTMLButtonElement {
   closeButton.style.right = "0";
   closeButton.style.zIndex = "1000001";
   closeButton.onclick = () => {
-    cleanUp(display);
+    cleanUp(lifecycle);
   };
   display.appendChild(closeButton);
   return closeButton;
@@ -63,7 +53,8 @@ function findDuplicates(): Array<[string, Element[]]> {
   const ids = new Map<string, Element[]>();
   const all = document.querySelectorAll("[id]");
   all.forEach((x) => {
-    if (x.id && x.id !== dupBoxId) {
+    if (x.closest("[data-a11y-playpen-tool]") !== null) return;
+    if (x.id) {
       if (ids.has(x.id)) {
         ids.get(x.id)?.push(x);
       } else {
@@ -75,7 +66,7 @@ function findDuplicates(): Array<[string, Element[]]> {
   // return new Map(Array.from(ids.entries()).filter((x) => x[1].length > 1));
 }
 
-function collectDuplicates(ds: HTMLElement): void {
+function collectDuplicates(lifecycle: BookmarkletLifecycle, ds: HTMLElement): void {
   const duplicates = findDuplicates();
   if (duplicates.length === 0) {
     ds.innerText = "No duplicate IDs found";
@@ -92,7 +83,11 @@ function collectDuplicates(ds: HTMLElement): void {
       header.innerText = k;
       header.addEventListener("mouseover", () => {
         v.forEach((x, i) => {
-          drawBox(x, "DupeId", undefined, undefined, dupBoxId, i !== 0);
+          drawBox(lifecycle, x, {
+            append: i !== 0,
+            group: DUPLICATE_OVERLAY_GROUP,
+            utilityName: "duplicate-id",
+          });
         });
       });
       l.appendChild(header);
@@ -102,7 +97,10 @@ function collectDuplicates(ds: HTMLElement): void {
       v.forEach((x) => {
         const p = document.createElement("li");
         p.addEventListener("mouseover", () => {
-          drawBox(x, "DupeId", undefined, undefined, dupBoxId);
+          drawBox(lifecycle, x, {
+            group: DUPLICATE_OVERLAY_GROUP,
+            utilityName: "duplicate-id",
+          });
         });
         p.style.display = "list-item";
         p.innerText = truncateString(x.innerHTML.length > 100 ? x.outerHTML.replace(x.innerHTML, "...") : x.outerHTML, 50);
@@ -120,5 +118,8 @@ function truncateString(str: string, num: number): string {
   return str.slice(0, num) + "...";
 }
 
-const ds = makeDisplay();
-collectDuplicates(ds);
+const lifecycle = activateBookmarklet("duplicate-id-check");
+if (lifecycle !== null) {
+  const ds = makeDisplay(lifecycle);
+  collectDuplicates(lifecycle, ds);
+}

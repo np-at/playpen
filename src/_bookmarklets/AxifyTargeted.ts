@@ -13,7 +13,7 @@ import CreatePointerSelector from "../utils/PointerSelectorClass";
 // ).then(console.log).catch(err=> {
 //   throw err;
 // });
-CreatePointerSelector((t) => {
+CreatePointerSelector("axify-targeted", (t) => {
   console.log("running on ", t);
   run(t, {
     elementRef: true,
