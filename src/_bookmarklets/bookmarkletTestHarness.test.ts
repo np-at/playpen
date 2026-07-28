@@ -6,7 +6,7 @@ import {
   type BookmarkletFixture,
 } from "./bookmarkletTestHarness.ts";
 import { drawBox } from "../utils/drawUtils.ts";
-import { teardownBookmarklet } from "../utils/bookmarkletLifecycle.ts";
+import { activateBookmarklet, teardownBookmarklet } from "../utils/bookmarkletLifecycle.ts";
 
 let fixture: BookmarkletFixture | undefined;
 let harness: BookmarkletHarness | undefined;
@@ -15,6 +15,7 @@ afterEach(() => {
   harness?.restore();
   fixture?.restore();
   teardownBookmarklet("force-focus-outline");
+  teardownBookmarklet("harness-coordinate-test");
   document.querySelectorAll("[rel=harness-coordinate-test]").forEach((element) => {
     element.remove();
   });
@@ -241,15 +242,19 @@ describe("bookmarklet execution harness", () => {
 });
 
 describe("known bookmarklet regressions", () => {
-  it.fails("positions an absolute overlay in document coordinates when the page is scrolled", async () => {
+  it("positions a fixed overlay in viewport coordinates when the page is scrolled", async () => {
     fixture = await mountBookmarkletFixture();
     const rect = fixture.stateTarget.getBoundingClientRect();
+    const lifecycle = activateBookmarklet("harness-coordinate-test");
+    if (lifecycle === null) throw new Error("expected lifecycle activation");
 
-    drawBox(fixture.stateTarget, "harness-coordinate-test");
+    drawBox(lifecycle, fixture.stateTarget, { utilityName: "harness-coordinate-test" });
 
     const overlay = document.querySelector<HTMLElement>("[rel=harness-coordinate-test]");
     expect(overlay).not.toBeNull();
-    expect(Number.parseFloat(overlay?.style.top ?? "")).toBeCloseTo(rect.top + window.scrollY);
-    expect(Number.parseFloat(overlay?.style.left ?? "")).toBeCloseTo(rect.left + window.scrollX);
+    expect(overlay?.style.position).toBe("fixed");
+    expect(Number.parseFloat(overlay?.style.top ?? "")).toBeCloseTo(rect.top);
+    expect(Number.parseFloat(overlay?.style.left ?? "")).toBeCloseTo(rect.left);
+    lifecycle.teardown();
   });
 });

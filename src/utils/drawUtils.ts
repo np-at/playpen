@@ -1,25 +1,108 @@
-export function clearCurrentSelectionBoxes(): void {
-  const nodes = Array.from(document.querySelectorAll("div.bounding-rect, div.segment-rect"));
-  for (const element of nodes) {
-    element.parentNode?.removeChild(element);
+import type { BookmarkletLifecycle } from "./bookmarkletLifecycle";
+
+type OwnedOverlay = {
+  element: HTMLDivElement;
+  group: string;
+  target: Element;
+};
+
+type OverlayState = {
+  animationFrameActive: boolean;
+  overlays: Set<OwnedOverlay>;
+  resizeObserver: ResizeObserver;
+};
+
+const overlayStates = new WeakMap<BookmarkletLifecycle, OverlayState>();
+
+function installOverlayStyle(lifecycle: BookmarkletLifecycle): void {
+  lifecycle.style(
+    document,
+    `div.segment-rect[data-a11y-playpen-tool="${lifecycle.toolName}"] {
+        pointer-events: none;
+        position: fixed;
+        z-index: 10000;
+      }
+      div.bounding-rect[data-a11y-playpen-tool="${lifecycle.toolName}"] {
+        pointer-events: none;
+        border: 3px solid red;
+        border-radius: 4px;
+        position: fixed;
+        z-index: 10000;
+      }`,
+  );
+}
+
+function positionOverlay(overlay: HTMLDivElement, target: Element): void {
+  const coords = target.getBoundingClientRect();
+  overlay.style.left = `${coords.left.toString()}px`;
+  overlay.style.top = `${coords.top.toString()}px`;
+  overlay.style.width = `${coords.width.toString()}px`;
+  overlay.style.height = `${coords.height.toString()}px`;
+  overlay.style.maxWidth = `${coords.width.toString()}px`;
+  overlay.style.maxHeight = `${coords.height.toString()}px`;
+}
+
+function stateFor(lifecycle: BookmarkletLifecycle): OverlayState {
+  const existing = overlayStates.get(lifecycle);
+  if (existing !== undefined) return existing;
+  installOverlayStyle(lifecycle);
+  const overlays = new Set<OwnedOverlay>();
+  const redraw = (): void => {
+    for (const overlay of overlays) positionOverlay(overlay.element, overlay.target);
+  };
+  const resizeObserver = new ResizeObserver(redraw);
+  const state = { animationFrameActive: false, overlays, resizeObserver };
+  overlayStates.set(lifecycle, state);
+  lifecycle.listen(window, "resize", redraw);
+  lifecycle.listen(document, "scroll", redraw, { capture: true, passive: true });
+  lifecycle.addCleanup(() => {
+    resizeObserver.disconnect();
+    overlays.clear();
+  });
+  return state;
+}
+
+function trackGeometry(lifecycle: BookmarkletLifecycle, state: OverlayState): void {
+  if (state.animationFrameActive) return;
+  state.animationFrameActive = true;
+  const redraw = (): void => {
+    if (!lifecycle.active || state.overlays.size === 0) {
+      state.animationFrameActive = false;
+      return;
+    }
+    for (const overlay of state.overlays) positionOverlay(overlay.element, overlay.target);
+    lifecycle.animationFrame(redraw);
+  };
+  lifecycle.animationFrame(redraw);
+}
+
+function clearOwnedOverlays(lifecycle: BookmarkletLifecycle, group?: string): void {
+  const { overlays, resizeObserver } = stateFor(lifecycle);
+  for (const overlay of overlays) {
+    if (group !== undefined && overlay.group !== group) continue;
+    overlay.element.remove();
+    overlays.delete(overlay);
+    if (![...overlays].some((candidate) => candidate.target === overlay.target)) {
+      resizeObserver.unobserve(overlay.target);
+    }
   }
 }
 
-export function drawFocusBox(selection: Element | null): void {
-  clearCurrentSelectionBoxes();
+export function clearCurrentSelectionBoxes(lifecycle: BookmarkletLifecycle): void {
+  clearOwnedOverlays(lifecycle);
+}
+
+export function drawFocusBox(lifecycle: BookmarkletLifecycle, selection: Element | null): void {
+  clearCurrentSelectionBoxes(lifecycle);
   if (selection == null) {
     return;
   }
   console.debug(selection);
   const rect = selection.getBoundingClientRect();
   if (rect.width && rect.height) {
-    const outline = document.createElement("div");
+    const outline = drawBox(lifecycle, selection, { utilityName: "focus-box" });
+    outline.classList.remove("segment-rect");
     outline.classList.add("bounding-rect");
-    outline.style.top = rect.top.toString(10) + "px";
-    outline.style.left = rect.left.toString(10) + "px";
-    outline.style.width = rect.width.toString(10) + "px";
-    outline.style.height = rect.height.toString(10) + "px";
-    document.body.appendChild(outline);
   }
   // if (rect.top && rect.left)
   //   focusTrace.push([rect.left, rect.top]);
@@ -27,17 +110,8 @@ export function drawFocusBox(selection: Element | null): void {
   // drawFocusTraceArrows();
 }
 
-export function ensureBoundingStyleAvailable(): void {
-  const boundRule =
-    "div.bounding-rect { pointer-events: none; border: 3px solid red; border-radius: 4px 4px 4px 4px; position: fixed; z-index: 10000;}";
-  const sht: CSSStyleSheet = document.styleSheets[0];
-  try {
-    sht.insertRule(boundRule, sht.cssRules.length);
-  } catch {
-    const styleSheet = document.createElement("style");
-    styleSheet.innerText = boundRule.valueOf();
-    document.head.appendChild(styleSheet);
-  }
+export function ensureBoundingStyleAvailable(lifecycle: BookmarkletLifecycle): void {
+  installOverlayStyle(lifecycle);
 }
 export type DrawStyleProps = Partial<CSSStyleDeclaration>;
 const defaultStyle: DrawStyleProps = {
@@ -51,48 +125,39 @@ const defaultStyle: DrawStyleProps = {
 /**
  * Draws a box around the specified element with optional content and styling.
  *
- * @param {HTMLElement} element - The HTML element around which the box will be drawn.
- * @param {string} utilityName - A name to associate with the utility.
- * @param {string} [content] - Optional content to display inside the box.
- * @param {DrawStyleProps} [style] - Optional styles to apply to the box.
- * @param {string} [id] - Optional ID to assign to the box element. If assigned, an element with the same ID will be removed before drawing the new box.
- * @param {boolean} skipRemoval - If true, existing elements with the same ID will not be removed.
+ * @param lifecycle - Lifecycle that owns the overlay, listeners, observer, and stylesheet.
+ * @param element - Element around which the box will be drawn.
+ * @param options - Display content, styling, and lifecycle-local grouping.
  */
 
+export type DrawBoxOptions = {
+  append?: boolean;
+  content?: string;
+  group?: string;
+  style?: DrawStyleProps;
+  utilityName: string;
+};
+
 export function drawBox(
+  lifecycle: BookmarkletLifecycle,
   element: Element,
-  utilityName: string,
-  content?: string,
-  style?: DrawStyleProps,
-  id?: string,
-  skipRemoval = false,
-): void {
+  { append = false, content, group, style, utilityName }: DrawBoxOptions,
+): HTMLDivElement {
   const blockDiv = document.createElement("div");
 
-  if (id) {
-    if (!skipRemoval) {
-      document.querySelectorAll("#" + id).forEach((z) => {
-        z.remove();
-      });
-    }
-    // remove any existing element with the same ID (
-
-    blockDiv.id = id;
-  }
-  const coords = element.getBoundingClientRect();
-  // console.log("el", element)
-  // console.log("coords", coords);
+  const overlayGroup = group ?? utilityName;
+  if (!append) clearOwnedOverlays(lifecycle, overlayGroup);
+  blockDiv.dataset.a11yOverlayGroup = overlayGroup;
+  lifecycle.ownNode(blockDiv);
+  const state = stateFor(lifecycle);
+  state.overlays.add({ element: blockDiv, group: overlayGroup, target: element });
+  state.resizeObserver.observe(element);
+  trackGeometry(lifecycle, state);
   blockDiv.setAttribute("rel", utilityName);
   blockDiv.className = "segment-rect";
-  blockDiv.style.left = `${coords.left.toString()}px`; // `${coords.x + (coords.width / 2) - 100}px`;
-  blockDiv.style.top = `${coords.top.toString()}px`; // `${coords.y + (coords.height / 2) - 10}px`;
-  blockDiv.style.width = `${coords.width.toString()}px`;
-  blockDiv.style.height = `${coords.height.toString()}px`;
-  blockDiv.style.position = "absolute";
+  blockDiv.style.position = "fixed";
   blockDiv.style.zIndex = "10000";
   blockDiv.style.display = "block";
-  blockDiv.style.maxWidth = `${coords.width.toString()}px`;
-  blockDiv.style.maxHeight = `${coords.height.toString()}px`;
   // blockDiv.style.minWidth = "200px";
   blockDiv.style.overflowWrap = "break-word";
   blockDiv.style.padding = "0px";
@@ -102,5 +167,7 @@ export function drawBox(
   // blockDiv.style.color = style?.color ?? 'white';
   // blockDiv.style.border = `2px solid ${style?.borderColor ?? 'black'}`;
   blockDiv.innerText = content ?? "";
+  positionOverlay(blockDiv, element);
   document.body.appendChild(blockDiv);
+  return blockDiv;
 }
