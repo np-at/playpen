@@ -1,1 +1,2 @@
-prefix_rule(pattern=["pnpm",["run",""],["vitest","test","build"]],decision="allow")
+prefix_rule(pattern=["pnpm",["run",],["vitest","test","build"]],decision="allow")
+prefix_rule(pattern=["pnpm",["vitest","test","build"]],decision="allow")
