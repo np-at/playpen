@@ -6,6 +6,7 @@ import {
   type BookmarkletFixture,
 } from "./bookmarkletTestHarness.ts";
 import { drawBox } from "../utils/drawUtils.ts";
+import { teardownBookmarklet } from "../utils/bookmarkletLifecycle.ts";
 
 let fixture: BookmarkletFixture | undefined;
 let harness: BookmarkletHarness | undefined;
@@ -13,7 +14,14 @@ let harness: BookmarkletHarness | undefined;
 afterEach(() => {
   harness?.restore();
   fixture?.restore();
+  teardownBookmarklet("force-focus-outline");
   document.querySelectorAll("[rel=harness-coordinate-test]").forEach((element) => {
+    element.remove();
+  });
+  document.querySelectorAll("[data-bookmarklet-test-fixture]").forEach((element) => {
+    element.remove();
+  });
+  document.querySelectorAll("style#phlffobkmklt").forEach((element) => {
     element.remove();
   });
   harness = undefined;
@@ -114,22 +122,42 @@ describe("bookmarklet execution harness", () => {
     await harness.run(async () => {
       await import(/* @vite-ignore */ entryUrl.href);
     });
-    expect(document.querySelectorAll("#phlffobkmklt").length).toBeGreaterThan(0);
+    expect(document.querySelectorAll("[data-a11y-playpen-tool=force-focus-outline]")).toHaveLength(1);
+    expect(fixture.shadowRoot.querySelector("[data-a11y-playpen-tool=force-focus-outline]")).not.toBeNull();
+    expect(fixture.sameOriginFrame.contentDocument?.querySelector("[data-a11y-playpen-tool=force-focus-outline]")).not.toBeNull();
 
     entryUrl.searchParams.set("bookmarklet-test-run", "teardown");
     await harness.run(async () => {
       await import(/* @vite-ignore */ entryUrl.href);
     });
 
-    expect(document.querySelectorAll("#phlffobkmklt")).toHaveLength(0);
-    expect(fixture.shadowRoot.querySelector("#phlffobkmklt")).toBeNull();
-    expect(fixture.sameOriginFrame.contentDocument?.querySelector("#phlffobkmklt")).toBeNull();
+    expect(document.querySelectorAll("[data-a11y-playpen-tool=force-focus-outline]")).toHaveLength(0);
+    expect(fixture.shadowRoot.querySelector("[data-a11y-playpen-tool=force-focus-outline]")).toBeNull();
+    expect(fixture.sameOriginFrame.contentDocument?.querySelector("[data-a11y-playpen-tool=force-focus-outline]")).toBeNull();
     expect(harness.comparePageState(before)).toEqual({
       focus: undefined,
       scroll: undefined,
       url: undefined,
       inlineStyles: [],
     });
+  });
+
+  it("does not treat a page-owned legacy id as lifecycle state", async () => {
+    fixture = await mountBookmarkletFixture();
+    harness = createBookmarkletHarness();
+    const pageStyle = document.createElement("style");
+    pageStyle.id = "phlffobkmklt";
+    pageStyle.dataset.bookmarkletTestFixture = "";
+    document.head.appendChild(pageStyle);
+    const entryUrl = new URL("./ForceFocusOutline.ts", import.meta.url);
+    entryUrl.searchParams.set("bookmarklet-test-run", "legacy-id-collision");
+
+    await harness.run(async () => {
+      await import(/* @vite-ignore */ entryUrl.href);
+    });
+
+    expect(pageStyle.isConnected).toBe(true);
+    expect(document.querySelectorAll("[data-a11y-playpen-tool=force-focus-outline]")).toHaveLength(1);
   });
 
   it("detects page state changed by activation and restored by teardown", async () => {
