@@ -21,7 +21,7 @@ export type BookmarkletLifecycle = {
   timeout(handler: TimerCallback, delay?: number, ...args: unknown[]): number;
   interval(handler: TimerCallback, delay?: number, ...args: unknown[]): number;
   animationFrame(callback: FrameRequestCallback): number;
-  observe<T extends DisconnectableObserver>(observer: T, target: Node, options?: MutationObserverInit): T;
+  observe(observer: MutationObserver, target: Node, options?: MutationObserverInit): MutationObserver;
   ownNode<T extends Element>(node: T): T;
   style(root: Document | ShadowRoot, cssText: string): HTMLStyleElement;
   setAttribute(element: Element, name: string, value: string): void;
@@ -120,8 +120,8 @@ class Lifecycle implements BookmarkletLifecycle {
     return id;
   }
 
-  observe<T extends DisconnectableObserver>(observer: T, target: Node, options?: MutationObserverInit): T {
-    if (observer instanceof MutationObserver) observer.observe(target, options);
+  observe(observer: MutationObserver, target: Node, options?: MutationObserverInit): MutationObserver {
+    observer.observe(target, options);
     this.#observers.add(observer);
     return observer;
   }
@@ -167,14 +167,42 @@ class Lifecycle implements BookmarkletLifecycle {
   teardown(): void {
     if (!this.#active) return;
     this.#active = false;
-    this.#abortController.abort();
+    const errors: unknown[] = [];
+    const attempt = (cleanup: () => void): void => {
+      try {
+        cleanup();
+      } catch (error) {
+        errors.push(error);
+      }
+    };
 
-    for (const id of this.#timeouts) window.clearTimeout(id);
-    for (const id of this.#intervals) window.clearInterval(id);
-    for (const id of this.#animationFrames) window.cancelAnimationFrame(id);
-    for (const observer of this.#observers) observer.disconnect();
-    for (let index = this.#cleanups.length - 1; index >= 0; index -= 1) this.#cleanups[index]?.();
-    for (const node of this.#ownedNodes) node.remove();
+    attempt(() => {
+      this.#abortController.abort();
+    });
+    for (const id of this.#timeouts)
+      attempt(() => {
+        window.clearTimeout(id);
+      });
+    for (const id of this.#intervals)
+      attempt(() => {
+        window.clearInterval(id);
+      });
+    for (const id of this.#animationFrames)
+      attempt(() => {
+        window.cancelAnimationFrame(id);
+      });
+    for (const observer of this.#observers)
+      attempt(() => {
+        observer.disconnect();
+      });
+    for (let index = this.#cleanups.length - 1; index >= 0; index -= 1) {
+      const cleanup = this.#cleanups[index];
+      attempt(cleanup);
+    }
+    for (const node of this.#ownedNodes)
+      attempt(() => {
+        node.remove();
+      });
 
     this.#timeouts.clear();
     this.#intervals.clear();
@@ -186,6 +214,9 @@ class Lifecycle implements BookmarkletLifecycle {
 
     const registry = lifecycleRegistry();
     if (registry.get(this.toolName) === this) registry.delete(this.toolName);
+
+    if (errors.length === 1) throw errors[0];
+    if (errors.length > 1) throw new AggregateError(errors, `Multiple ${this.toolName} cleanup operations failed`);
   }
 }
 

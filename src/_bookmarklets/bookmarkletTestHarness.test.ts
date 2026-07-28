@@ -70,6 +70,45 @@ describe("bookmarklet execution harness", () => {
     ]);
   });
 
+  it("does not claim or remove page nodes that already use the tool marker", async () => {
+    fixture = await mountBookmarkletFixture();
+    const pageNode = document.createElement("div");
+    pageNode.dataset.a11yPlaypenTool = "page-owned";
+    fixture.root.appendChild(pageNode);
+    harness = createBookmarkletHarness();
+
+    expect(harness.snapshot().ownedNodes).toHaveLength(0);
+
+    harness.restore();
+    expect(pageNode.isConnected).toBe(true);
+  });
+
+  it("tracks resources created through an existing same-origin iframe realm", async () => {
+    fixture = await mountBookmarkletFixture();
+    harness = createBookmarkletHarness();
+    const frameWindow = fixture.sameOriginFrame.contentWindow;
+    const frameDocument = fixture.sameOriginFrame.contentDocument;
+    if (frameWindow === null || frameDocument === null) throw new Error("expected a same-origin fixture frame");
+    const frameRealm = frameWindow as Window & typeof globalThis;
+
+    await harness.run(() => {
+      frameWindow.addEventListener("resize", () => undefined);
+      frameWindow.setTimeout(() => undefined, 60_000);
+      frameWindow.setInterval(() => undefined, 60_000);
+      frameWindow.requestAnimationFrame(() => undefined);
+      new frameRealm.MutationObserver(() => undefined).observe(frameDocument.body, { childList: true });
+      new frameRealm.ResizeObserver(() => undefined).observe(frameDocument.body);
+      new frameRealm.IntersectionObserver(() => undefined).observe(frameDocument.body);
+    });
+
+    const state = harness.snapshot();
+    expect(state.listeners).toHaveLength(1);
+    expect(state.timeouts).toHaveLength(1);
+    expect(state.intervals).toHaveLength(1);
+    expect(state.animationFrames).toHaveLength(1);
+    expect(state.observers).toHaveLength(3);
+  });
+
   it("runs the repeated-activation teardown contract", async () => {
     fixture = await mountBookmarkletFixture();
     harness = createBookmarkletHarness();

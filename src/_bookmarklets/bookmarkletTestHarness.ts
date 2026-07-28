@@ -26,10 +26,11 @@ type ListenerRecord = {
   capture: boolean;
   signal: AbortSignal | undefined;
   removed: boolean;
+  remove(): void;
 };
 
 type ObserverRecord = {
-  observer: MutationObserver;
+  observer: { disconnect(): void };
   disconnected: boolean;
 };
 
@@ -37,8 +38,9 @@ export type BookmarkletState = {
   ownedNodes: Element[];
   listeners: ListenerRecord[];
   timeouts: number[];
+  intervals: number[];
   animationFrames: number[];
-  observers: MutationObserver[];
+  observers: Array<{ disconnect(): void }>;
   console: ConsoleEntry[];
 };
 
@@ -80,9 +82,10 @@ function rootsStartingAt(root: Document | ShadowRoot): Array<Document | ShadowRo
 
     for (const element of current.querySelectorAll("*")) {
       if (element.shadowRoot !== null) pending.push(element.shadowRoot);
-      if (element instanceof HTMLIFrameElement) {
+      if (element.localName === "iframe") {
         try {
-          if (element.contentDocument !== null) pending.push(element.contentDocument);
+          const frameDocument = (element as HTMLIFrameElement).contentDocument;
+          if (frameDocument !== null) pending.push(frameDocument);
         } catch {
           // Cross-origin and deliberately inaccessible fixture frames are expected.
         }
@@ -176,46 +179,59 @@ export async function mountBookmarkletFixture(): Promise<BookmarkletFixture> {
 }
 
 export function createBookmarkletHarness(): BookmarkletHarness {
-  const nativeAddEventListener: typeof EventTarget.prototype.addEventListener = Reflect.get(EventTarget.prototype, "addEventListener");
-  const nativeRemoveEventListener: typeof EventTarget.prototype.removeEventListener = Reflect.get(
-    EventTarget.prototype,
-    "removeEventListener",
-  );
-  const nativeWindowAddEventListener = window.addEventListener.bind(window);
-  const nativeWindowRemoveEventListener = window.removeEventListener.bind(window);
-  const nativeDocumentAddEventListener = document.addEventListener.bind(document);
-  const nativeDocumentRemoveEventListener = document.removeEventListener.bind(document);
-  const nativeSetTimeout = window.setTimeout.bind(window);
-  const nativeClearTimeout = window.clearTimeout.bind(window);
-  const nativeRequestAnimationFrame = window.requestAnimationFrame.bind(window);
-  const nativeCancelAnimationFrame = window.cancelAnimationFrame.bind(window);
-  const NativeMutationObserver = window.MutationObserver;
+  type ScheduledResource = { id: number; active: boolean; realm: Window; clear(): void };
+  type AnimationFrameResource = { id: number; active: boolean; realm: Window; cancel(): void };
   const consoleLevels = ["debug", "info", "log", "warn", "error"] as const;
-  const nativeConsole = new Map<ConsoleEntry["level"], (...args: unknown[]) => void>(
-    consoleLevels.map((level) => [level, console[level].bind(console)]),
-  );
-
+  const baselineOwnedNodes = new Set(collectOwnedNodes());
   const listeners: ListenerRecord[] = [];
-  const timeouts = new Set<number>();
-  const animationFrames = new Set<number>();
+  const timeouts: ScheduledResource[] = [];
+  const intervals: ScheduledResource[] = [];
+  const animationFrames: AnimationFrameResource[] = [];
   const observers: ObserverRecord[] = [];
   const consoleEntries: ConsoleEntry[] = [];
+  const realmRestorations: Array<() => void> = [];
+  const instrumentedRealms = new Set<Window>();
   let restored = false;
 
-  function trackListener(target: EventTarget, type: string, listener: Listener, options?: boolean | AddEventListenerOptions): void {
-    listeners.push({
+  function newOwnedNodes(): Element[] {
+    return collectOwnedNodes().filter((node) => !baselineOwnedNodes.has(node));
+  }
+
+  function trackListener(
+    target: EventTarget,
+    type: string,
+    listener: Listener,
+    options: boolean | AddEventListenerOptions | undefined,
+    remove: () => void,
+  ): void {
+    const existing = listeners.find(
+      (record) =>
+        !record.removed &&
+        record.target === target &&
+        record.type === type &&
+        record.listener === listener &&
+        record.capture === captureOptionCapture(options),
+    );
+    if (existing !== undefined) return;
+
+    const record: ListenerRecord = {
       target,
       type,
       listener,
       capture: captureOptionCapture(options),
       signal: typeof options === "object" ? options.signal : undefined,
       removed: false,
-    });
+      remove() {
+        if (record.removed) return;
+        record.removed = true;
+        remove();
+      },
+    };
+    listeners.push(record);
   }
 
   function markListenerRemoved(target: EventTarget, type: string, listener: Listener, options?: boolean | EventListenerOptions): void {
     const capture = captureOptionCapture(options);
-    let record: ListenerRecord | undefined;
     for (let index = listeners.length - 1; index >= 0; index -= 1) {
       const candidate = listeners[index];
       if (
@@ -225,107 +241,258 @@ export function createBookmarkletHarness(): BookmarkletHarness {
         candidate.listener === listener &&
         candidate.capture === capture
       ) {
-        record = candidate;
+        candidate.removed = true;
         break;
       }
     }
-    if (record !== undefined) record.removed = true;
   }
 
-  EventTarget.prototype.addEventListener = function (
-    type: string,
-    listener: Listener,
-    options?: boolean | AddEventListenerOptions,
-  ): void {
-    trackListener(this, type, listener, options);
-    nativeAddEventListener.call(this, type, listener, options);
-  };
-
-  EventTarget.prototype.removeEventListener = function (
-    type: string,
-    listener: Listener,
-    options?: boolean | EventListenerOptions,
-  ): void {
-    markListenerRemoved(this, type, listener, options);
-    nativeRemoveEventListener.call(this, type, listener, options);
-  };
-
-  window.addEventListener = function (type: string, listener: Listener, options?: boolean | AddEventListenerOptions): void {
-    trackListener(window, type, listener, options);
-    nativeWindowAddEventListener.call(window, type, listener, options);
-  };
-  window.removeEventListener = function (type: string, listener: Listener, options?: boolean | EventListenerOptions): void {
-    markListenerRemoved(window, type, listener, options);
-    nativeWindowRemoveEventListener.call(window, type, listener, options);
-  };
-  document.addEventListener = function (type: string, listener: Listener, options?: boolean | AddEventListenerOptions): void {
-    trackListener(document, type, listener, options);
-    nativeDocumentAddEventListener.call(document, type, listener, options);
-  };
-  document.removeEventListener = function (type: string, listener: Listener, options?: boolean | EventListenerOptions): void {
-    markListenerRemoved(document, type, listener, options);
-    nativeDocumentRemoveEventListener.call(document, type, listener, options);
-  };
-
-  window.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unknown[]): number => {
-    let id = 0;
-    const wrapped =
-      typeof handler === "function"
-        ? (...callbackArgs: unknown[]) => {
-            timeouts.delete(id);
-            Reflect.apply(handler, window, callbackArgs);
-          }
-        : handler;
-    id = nativeSetTimeout(wrapped, timeout, ...args);
-    timeouts.add(id);
-    return id;
-  }) as typeof window.setTimeout;
-
-  window.clearTimeout = ((id?: number) => {
-    if (id !== undefined) timeouts.delete(id);
-    nativeClearTimeout(id);
-  }) as typeof window.clearTimeout;
-
-  window.requestAnimationFrame = (callback: FrameRequestCallback): number => {
-    let id = 0;
-    id = nativeRequestAnimationFrame((time) => {
-      animationFrames.delete(id);
-      callback(time);
-    });
-    animationFrames.add(id);
-    return id;
-  };
-
-  window.cancelAnimationFrame = (id: number): void => {
-    animationFrames.delete(id);
-    nativeCancelAnimationFrame(id);
-  };
-
-  class TrackedMutationObserver extends NativeMutationObserver {
-    readonly #record: ObserverRecord;
-
-    constructor(callback: MutationCallback) {
-      super(callback);
-      this.#record = { observer: this, disconnected: false };
-      observers.push(this.#record);
+  function findScheduledResource<T extends { id: number; active: boolean; realm: Window }>(
+    records: T[],
+    realm: Window,
+    id: number | undefined,
+  ): T | undefined {
+    for (let index = records.length - 1; index >= 0; index -= 1) {
+      const candidate = records[index];
+      if (candidate.active && candidate.realm === realm && candidate.id === id) return candidate;
     }
-
-    override observe(target: Node, options?: MutationObserverInit): void {
-      this.#record.disconnected = false;
-      super.observe(target, options);
-    }
-
-    override disconnect(): void {
-      this.#record.disconnected = true;
-      super.disconnect();
-    }
+    return undefined;
   }
-  window.MutationObserver = TrackedMutationObserver;
 
-  for (const level of consoleLevels) {
-    console[level] = (...args: unknown[]) => {
-      consoleEntries.push({ level, args });
+  function instrumentRealm(realmWindow: Window): void {
+    if (instrumentedRealms.has(realmWindow)) return;
+    instrumentedRealms.add(realmWindow);
+    const realm = realmWindow as Window & typeof globalThis;
+    const realmDocument = realm.document;
+    const eventTargetPrototype = realm.EventTarget.prototype;
+    const nativeAddEventListener: typeof eventTargetPrototype.addEventListener = Reflect.get(eventTargetPrototype, "addEventListener");
+    const nativeRemoveEventListener: typeof eventTargetPrototype.removeEventListener = Reflect.get(
+      eventTargetPrototype,
+      "removeEventListener",
+    );
+    const nativeWindowAddEventListener = realm.addEventListener.bind(realm);
+    const nativeWindowRemoveEventListener = realm.removeEventListener.bind(realm);
+    const nativeDocumentAddEventListener = realmDocument.addEventListener.bind(realmDocument);
+    const nativeDocumentRemoveEventListener = realmDocument.removeEventListener.bind(realmDocument);
+    const nativeSetTimeout = realm.setTimeout.bind(realm);
+    const nativeClearTimeout = realm.clearTimeout.bind(realm);
+    const nativeSetInterval = realm.setInterval.bind(realm);
+    const nativeClearInterval = realm.clearInterval.bind(realm);
+    const nativeRequestAnimationFrame = realm.requestAnimationFrame.bind(realm);
+    const nativeCancelAnimationFrame = realm.cancelAnimationFrame.bind(realm);
+    const NativeMutationObserver = realm.MutationObserver;
+    const NativeResizeObserver = realm.ResizeObserver;
+    const NativeIntersectionObserver = realm.IntersectionObserver;
+    const nativeConsole = new Map<ConsoleEntry["level"], (...args: unknown[]) => void>(
+      consoleLevels.map((level) => [level, realm.console[level].bind(realm.console)]),
+    );
+
+    eventTargetPrototype.addEventListener = function (
+      type: string,
+      listener: Listener,
+      options?: boolean | AddEventListenerOptions,
+    ): void {
+      trackListener(this, type, listener, options, () => {
+        nativeRemoveEventListener.call(this, type, listener, options);
+      });
+      nativeAddEventListener.call(this, type, listener, options);
     };
+    eventTargetPrototype.removeEventListener = function (
+      type: string,
+      listener: Listener,
+      options?: boolean | EventListenerOptions,
+    ): void {
+      markListenerRemoved(this, type, listener, options);
+      nativeRemoveEventListener.call(this, type, listener, options);
+    };
+
+    realm.addEventListener = function (type: string, listener: Listener, options?: boolean | AddEventListenerOptions): void {
+      trackListener(realm, type, listener, options, () => {
+        nativeWindowRemoveEventListener.call(realm, type, listener, options);
+      });
+      nativeWindowAddEventListener.call(realm, type, listener, options);
+    };
+    realm.removeEventListener = function (type: string, listener: Listener, options?: boolean | EventListenerOptions): void {
+      markListenerRemoved(realm, type, listener, options);
+      nativeWindowRemoveEventListener.call(realm, type, listener, options);
+    };
+    realmDocument.addEventListener = function (type: string, listener: Listener, options?: boolean | AddEventListenerOptions): void {
+      trackListener(realmDocument, type, listener, options, () => {
+        nativeDocumentRemoveEventListener.call(realmDocument, type, listener, options);
+      });
+      nativeDocumentAddEventListener.call(realmDocument, type, listener, options);
+    };
+    realmDocument.removeEventListener = function (type: string, listener: Listener, options?: boolean | EventListenerOptions): void {
+      markListenerRemoved(realmDocument, type, listener, options);
+      nativeDocumentRemoveEventListener.call(realmDocument, type, listener, options);
+    };
+
+    realm.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unknown[]): number => {
+      const record: ScheduledResource = {
+        id: 0,
+        active: true,
+        realm,
+        clear() {
+          if (!record.active) return;
+          record.active = false;
+          nativeClearTimeout(record.id);
+        },
+      };
+      const wrapped =
+        typeof handler === "function"
+          ? (...callbackArgs: unknown[]) => {
+              record.active = false;
+              Reflect.apply(handler, realm, callbackArgs);
+            }
+          : handler;
+      record.id = nativeSetTimeout(wrapped, timeout, ...args);
+      timeouts.push(record);
+      return record.id;
+    }) as typeof realm.setTimeout;
+    realm.clearTimeout = ((id?: number) => {
+      const record = findScheduledResource(timeouts, realm, id);
+      record?.clear();
+      nativeClearTimeout(id);
+    }) as typeof realm.clearTimeout;
+
+    realm.setInterval = ((handler: TimerHandler, timeout?: number, ...args: unknown[]): number => {
+      const id = nativeSetInterval(handler, timeout, ...args);
+      const record: ScheduledResource = {
+        id,
+        active: true,
+        realm,
+        clear() {
+          if (!record.active) return;
+          record.active = false;
+          nativeClearInterval(id);
+        },
+      };
+      intervals.push(record);
+      return id;
+    }) as typeof realm.setInterval;
+    realm.clearInterval = ((id?: number) => {
+      const record = findScheduledResource(intervals, realm, id);
+      record?.clear();
+      nativeClearInterval(id);
+    }) as typeof realm.clearInterval;
+
+    realm.requestAnimationFrame = (callback: FrameRequestCallback): number => {
+      const record: AnimationFrameResource = {
+        id: 0,
+        active: true,
+        realm,
+        cancel() {
+          if (!record.active) return;
+          record.active = false;
+          nativeCancelAnimationFrame(record.id);
+        },
+      };
+      record.id = nativeRequestAnimationFrame((time) => {
+        record.active = false;
+        callback(time);
+      });
+      animationFrames.push(record);
+      return record.id;
+    };
+    realm.cancelAnimationFrame = (id: number): void => {
+      const record = findScheduledResource(animationFrames, realm, id);
+      record?.cancel();
+      nativeCancelAnimationFrame(id);
+    };
+
+    class TrackedMutationObserver extends NativeMutationObserver {
+      readonly #record: ObserverRecord;
+
+      constructor(callback: MutationCallback) {
+        super(callback);
+        this.#record = { observer: this, disconnected: false };
+        observers.push(this.#record);
+      }
+
+      override observe(target: Node, options?: MutationObserverInit): void {
+        this.#record.disconnected = false;
+        super.observe(target, options);
+      }
+
+      override disconnect(): void {
+        this.#record.disconnected = true;
+        super.disconnect();
+      }
+    }
+    realm.MutationObserver = TrackedMutationObserver;
+
+    class TrackedResizeObserver extends NativeResizeObserver {
+      readonly #record: ObserverRecord;
+
+      constructor(callback: ResizeObserverCallback) {
+        super(callback);
+        this.#record = { observer: this, disconnected: false };
+        observers.push(this.#record);
+      }
+
+      override observe(target: Element, options?: ResizeObserverOptions): void {
+        this.#record.disconnected = false;
+        super.observe(target, options);
+      }
+
+      override disconnect(): void {
+        this.#record.disconnected = true;
+        super.disconnect();
+      }
+    }
+    realm.ResizeObserver = TrackedResizeObserver;
+
+    class TrackedIntersectionObserver extends NativeIntersectionObserver {
+      readonly #record: ObserverRecord;
+
+      constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+        super(callback, options);
+        this.#record = { observer: this, disconnected: false };
+        observers.push(this.#record);
+      }
+
+      override observe(target: Element): void {
+        this.#record.disconnected = false;
+        super.observe(target);
+      }
+
+      override disconnect(): void {
+        this.#record.disconnected = true;
+        super.disconnect();
+      }
+    }
+    realm.IntersectionObserver = TrackedIntersectionObserver;
+
+    for (const level of consoleLevels) {
+      realm.console[level] = (...args: unknown[]) => {
+        consoleEntries.push({ level, args });
+      };
+    }
+
+    realmRestorations.push(() => {
+      eventTargetPrototype.addEventListener = nativeAddEventListener;
+      eventTargetPrototype.removeEventListener = nativeRemoveEventListener;
+      realm.addEventListener = nativeWindowAddEventListener;
+      realm.removeEventListener = nativeWindowRemoveEventListener;
+      realmDocument.addEventListener = nativeDocumentAddEventListener;
+      realmDocument.removeEventListener = nativeDocumentRemoveEventListener;
+      realm.setTimeout = nativeSetTimeout;
+      realm.clearTimeout = nativeClearTimeout;
+      realm.setInterval = nativeSetInterval;
+      realm.clearInterval = nativeClearInterval;
+      realm.requestAnimationFrame = nativeRequestAnimationFrame;
+      realm.cancelAnimationFrame = nativeCancelAnimationFrame;
+      realm.MutationObserver = NativeMutationObserver;
+      realm.ResizeObserver = NativeResizeObserver;
+      realm.IntersectionObserver = NativeIntersectionObserver;
+      for (const [level, method] of nativeConsole) realm.console[level] = method;
+    });
+  }
+
+  for (const root of rootsStartingAt(document)) {
+    if (root.nodeType !== Node.DOCUMENT_NODE) continue;
+    const rootWindow = (root as Document).defaultView;
+    if (rootWindow !== null) instrumentRealm(rootWindow);
   }
 
   function activeListeners(): ListenerRecord[] {
@@ -344,10 +511,11 @@ export function createBookmarkletHarness(): BookmarkletHarness {
     },
     snapshot() {
       return {
-        ownedNodes: collectOwnedNodes(),
+        ownedNodes: newOwnedNodes(),
         listeners: activeListeners(),
-        timeouts: [...timeouts],
-        animationFrames: [...animationFrames],
+        timeouts: timeouts.filter((record) => record.active).map((record) => record.id),
+        intervals: intervals.filter((record) => record.active).map((record) => record.id),
+        animationFrames: animationFrames.filter((record) => record.active).map((record) => record.id),
         observers: observers.filter((record) => !record.disconnected).map((record) => record.observer),
         console: [...consoleEntries],
       };
@@ -383,27 +551,13 @@ export function createBookmarkletHarness(): BookmarkletHarness {
       if (restored) return;
       restored = true;
 
-      for (const listener of activeListeners()) {
-        nativeRemoveEventListener.call(listener.target, listener.type, listener.listener, listener.capture);
-        listener.removed = true;
-      }
-      for (const id of timeouts) nativeClearTimeout(id);
-      for (const id of animationFrames) nativeCancelAnimationFrame(id);
+      for (const listener of activeListeners()) listener.remove();
+      for (const record of timeouts) record.clear();
+      for (const record of intervals) record.clear();
+      for (const record of animationFrames) record.cancel();
       for (const record of observers) record.observer.disconnect();
-      for (const ownedNode of collectOwnedNodes()) ownedNode.remove();
-
-      EventTarget.prototype.addEventListener = nativeAddEventListener;
-      EventTarget.prototype.removeEventListener = nativeRemoveEventListener;
-      window.addEventListener = nativeWindowAddEventListener;
-      window.removeEventListener = nativeWindowRemoveEventListener;
-      document.addEventListener = nativeDocumentAddEventListener;
-      document.removeEventListener = nativeDocumentRemoveEventListener;
-      window.setTimeout = nativeSetTimeout;
-      window.clearTimeout = nativeClearTimeout;
-      window.requestAnimationFrame = nativeRequestAnimationFrame;
-      window.cancelAnimationFrame = nativeCancelAnimationFrame;
-      window.MutationObserver = NativeMutationObserver;
-      for (const [level, method] of nativeConsole) console[level] = method;
+      for (const ownedNode of newOwnedNodes()) ownedNode.remove();
+      for (let index = realmRestorations.length - 1; index >= 0; index -= 1) realmRestorations[index]?.();
     },
   };
 }

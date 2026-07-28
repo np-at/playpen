@@ -109,6 +109,22 @@ describe("bookmarklet lifecycle", () => {
     expect(toolNode.isConnected).toBe(false);
   });
 
+  it("finishes teardown and releases the registry when a cleanup throws", () => {
+    lifecycle = activateBookmarklet(TOOL_NAME);
+    if (lifecycle === null) throw new Error("expected lifecycle activation");
+    const ownedNode = lifecycle.ownNode(document.createElement("div"));
+    document.body.appendChild(ownedNode);
+    lifecycle.addCleanup(() => {
+      throw new Error("cleanup failed");
+    });
+
+    expect(() => lifecycle?.teardown()).toThrow("cleanup failed");
+
+    expect(ownedNode.isConnected).toBe(false);
+    expect(lifecycle.active).toBe(false);
+    expect(activateBookmarklet(TOOL_NAME)).not.toBeNull();
+  });
+
   it("injects one owned stylesheet per tool and root", () => {
     lifecycle = activateBookmarklet(TOOL_NAME);
     if (lifecycle === null) throw new Error("expected lifecycle activation");
