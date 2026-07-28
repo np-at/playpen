@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Semi-sticky fading banner</title>
+    <link rel="stylesheet" href="../../styles/global.css" />
+  </head>
+  <body>
+    <header id="banner" class="banner">
+      <nav aria-label="Sections">
+        <ul role="list">
+          <li><a href="#intro" data-target="intro">Intro</a></li>
+          <li><a href="#details" data-target="details">Details</a></li>
+          <li><a href="#summary" data-target="summary">Summary</a></li>
+        </ul>
+      </nav>
+    </header>
+    <main>
+      <h1>Semi-sticky fading banner</h1>
+      <p>
+        A fixed section-nav banner that fades out three seconds after you stop scrolling and reappears on the next scroll. The
+        scroll-spy half is implemented correctly — exactly one link carries <code>aria-current="location"</code> at a time, and it
+        tracks the section you are reading.
+      </p>
+      <p>The show/hide half is the naive version, and it is broken in the usual ways:</p>
+      <ul>
+        <li>
+          Once the fade finishes the banner gets <code>display: none</code>, so its three links leave the tab order. A keyboard user
+          tabbing down the page simply loses them, and nothing but a pointer scroll brings them back.
+        </li>
+        <li>Focus is not tracked: tabbing into a link while it is fading does not cancel the fade.</li>
+        <li>The banner overlays the headings it links to, so following one of its own links lands with the target obscured.</li>
+        <li>The fade ignores <code>prefers-reduced-motion</code>.</li>
+      </ul>
+
+      <section id="intro" aria-labelledby="intro-h">
+        <h2 id="intro-h">Intro</h2>
+        <p>
+          Scroll down and stop. After three seconds the banner fades away. Scroll again and it comes straight back — but only for a
+          pointer or a scroll key. Try reaching it with Tab alone after it has gone.
+        </p>
+        <p>
+          The pattern shows up on documentation sites, long-form articles and marketing pages: the nav is useful enough to pin, but it
+          eats vertical space, so it gets hidden whenever the reader looks idle. "Idle" is measured by scroll events only, which is
+          exactly the assumption that excludes keyboard and screen reader users.
+        </p>
+        <p>
+          Note that the fade is driven by a <code>setTimeout</code> restarted on every scroll event, and the final
+          <code>display: none</code> is applied from a <code>transitionend</code> listener. Reading a section slowly, without
+          scrolling, counts as idle.
+        </p>
+        <p>
+          There is a second-order problem too. Because the hidden state is <code>display: none</code> rather than
+          <code>visibility: hidden</code> or an offscreen transform, the links are removed from the accessibility tree entirely, not
+          just made unclickable. A screen reader user navigating by landmark will find the banner's <code>nav</code> one moment and not
+          the next, with no announcement either way.
+        </p>
+      </section>
+
+      <section id="details" aria-labelledby="details-h">
+        <h2 id="details-h">Details</h2>
+        <p>
+          The active link is recomputed once per animation frame from
+          <code>getBoundingClientRect().top</code>: the last section whose top has passed under the banner wins, falling back to the
+          first section at the very top of the page.
+        </p>
+        <p>
+          The banner offset used for that comparison is measured once at startup. Measuring it live would read zero while the banner is
+          hidden, which would move the threshold every time it faded and flip the current link with no scrolling at all.
+        </p>
+        <p>
+          <code>aria-current</code> is only rewritten when the active section actually changes. Setting it every frame would be correct
+          in the DOM but would give some screen readers a reason to re-announce the link repeatedly while scrolling.
+        </p>
+        <p>
+          Click "Summary" in the banner and watch where the page lands: the heading ends up underneath the banner, because there is no
+          <code>scroll-margin-top</code> on the sections. That is left in on purpose.
+        </p>
+        <p>
+          The banner is <code>position: fixed</code> rather than <code>sticky</code>. A sticky banner is in normal flow, so collapsing
+          it with <code>display: none</code> would remove its height, shift the content up, and fire another scroll event — which would
+          show the banner again, shift everything back, and oscillate.
+        </p>
+      </section>
+
+      <section id="summary" aria-labelledby="summary-h">
+        <h2 id="summary-h">Summary</h2>
+        <p>
+          Things a fixed version would need: keep the banner reachable when hidden (translate it offscreen and bring it back on
+          <code>focusin</code>, rather than removing it from the tree), cancel the fade while focus is inside it, respect
+          <code>prefers-reduced-motion</code>, and add <code>scroll-margin-top</code> so its own links land on visible headings.
+        </p>
+        <p>
+          None of that is implemented here. Point a screen reader or one of this playpen's bookmarklets at the page and watch the
+          banner's <code>nav</code> landmark come and go.
+        </p>
+      </section>
+    </main>
+    <script src="./index.ts" type="module"></script>
+  </body>
+</html>

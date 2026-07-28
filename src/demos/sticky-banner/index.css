@@ -1,0 +1,71 @@
+:root {
+  --banner-height: 3.5rem;
+}
+
+body {
+  padding-block-start: var(--banner-height);
+}
+
+/* `fixed`, not `sticky`: a sticky banner is in flow, so toggling display:none
+   would collapse its height and shift the page (which fires another scroll
+   event, which re-shows the banner). Overlaying the content is also what the
+   real-world version of this pattern does. */
+.banner {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  z-index: 10;
+  block-size: var(--banner-height);
+  background: var(--background-color);
+  border-block-end: 1px solid var(--thin-border-color);
+  opacity: 1;
+  transition: opacity 400ms;
+}
+
+.banner.hidden {
+  display: none;
+}
+
+/* Three equal-width regions partitioning the banner, with a divider between. */
+.banner ul {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  block-size: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.banner li {
+  display: grid;
+  place-items: center;
+}
+
+.banner li + li {
+  border-inline-start: 1px solid var(--thin-border-color);
+}
+
+.banner a {
+  display: inline-block;
+  padding-block: 0.25rem;
+  border-block-end: 3px solid transparent;
+}
+
+/* Not colour-only: the current link also gets an underline and bolder weight. */
+.banner a[aria-current="location"] {
+  color: var(--primary-text-color);
+  font-weight: 700;
+  border-block-end-color: currentColor;
+}
+
+main {
+  max-inline-size: 60ch;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+  padding-block-end: 60vh;
+}
+
+/* Deliberately no `scroll-margin-top` on the sections: the banner obscuring the
+   heading you just jumped to is one of the flaws this demo documents. */
+section {
+  margin-block-start: 4rem;
+}
