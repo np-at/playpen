@@ -14,7 +14,7 @@ function displayDiv(lifecycle: BookmarkletLifecycle): HTMLDivElement {
 }
 
 function createDisplayDiv(lifecycle: BookmarkletLifecycle): HTMLDivElement {
-  const displayDiv = lifecycle.ownNode(makeDraggableDisplay());
+  const displayDiv = makeDraggableDisplay(lifecycle);
   displayDiv.id = "show-image-alt-display";
   displayDiv.style.minWidth = "200px";
   displayDiv.style.minHeight = "20px";
