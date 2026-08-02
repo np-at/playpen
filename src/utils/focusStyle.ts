@@ -205,12 +205,12 @@ type PageState = {
   view: Window;
 };
 
-function structuredCloneEquals(
+async function structuredCloneEquals(
   left: unknown,
   right: unknown,
   paired: Map<object, object> = new Map(),
   reversePaired: Map<object, object> = new Map(),
-): boolean {
+): Promise<boolean> {
   if (Object.is(left, right)) return true;
   if (typeof left !== "object" || left === null || typeof right !== "object" || right === null) return false;
   if (paired.has(left)) return paired.get(left) === right;
@@ -226,23 +226,52 @@ function structuredCloneEquals(
     const rightExpression = right as RegExp;
     return leftExpression.source === rightExpression.source && leftExpression.flags === rightExpression.flags;
   }
+  if (leftTag === "[object Blob]" || leftTag === "[object File]") {
+    const leftBlob = left as Blob;
+    const rightBlob = right as Blob;
+    if (leftBlob.size !== rightBlob.size || leftBlob.type !== rightBlob.type) return false;
+    if (leftTag === "[object File]") {
+      const leftFile = left as File;
+      const rightFile = right as File;
+      if (leftFile.name !== rightFile.name || leftFile.lastModified !== rightFile.lastModified) return false;
+    }
+    const [leftContents, rightContents] = await Promise.all([leftBlob.arrayBuffer(), rightBlob.arrayBuffer()]);
+    return structuredCloneEquals(leftContents, rightContents, paired, reversePaired);
+  }
+  if (leftTag === "[object Error]") {
+    const leftError = left as Error & { cause?: unknown };
+    const rightError = right as Error & { cause?: unknown };
+    if (leftError.name !== rightError.name || leftError.message !== rightError.message) return false;
+    for (const property of ["stack", "cause"] as const) {
+      if (Object.hasOwn(leftError, property) !== Object.hasOwn(rightError, property)) return false;
+      if (
+        Object.hasOwn(leftError, property) &&
+        !(await structuredCloneEquals(leftError[property], rightError[property], paired, reversePaired))
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
   if (leftTag === "[object Map]") {
     const leftEntries = Array.from((left as Map<unknown, unknown>).entries());
     const rightEntries = Array.from((right as Map<unknown, unknown>).entries());
     if (leftEntries.length !== rightEntries.length) return false;
-    return leftEntries.every(([leftKey, leftValue], index) => {
+    for (const [index, [leftKey, leftValue]] of leftEntries.entries()) {
       const rightEntry = rightEntries[index];
-      return (
-        structuredCloneEquals(leftKey, rightEntry[0], paired, reversePaired) &&
-        structuredCloneEquals(leftValue, rightEntry[1], paired, reversePaired)
-      );
-    });
+      if (!(await structuredCloneEquals(leftKey, rightEntry[0], paired, reversePaired))) return false;
+      if (!(await structuredCloneEquals(leftValue, rightEntry[1], paired, reversePaired))) return false;
+    }
+    return true;
   }
   if (leftTag === "[object Set]") {
     const leftValues = Array.from((left as Set<unknown>).values());
     const rightValues = Array.from((right as Set<unknown>).values());
     if (leftValues.length !== rightValues.length) return false;
-    return leftValues.every((leftValue, index) => structuredCloneEquals(leftValue, rightValues[index], paired, reversePaired));
+    for (const [index, leftValue] of leftValues.entries()) {
+      if (!(await structuredCloneEquals(leftValue, rightValues[index], paired, reversePaired))) return false;
+    }
+    return true;
   }
   if (ArrayBuffer.isView(left) && ArrayBuffer.isView(right)) {
     return (
@@ -260,25 +289,31 @@ function structuredCloneEquals(
 
   const leftKeys = Object.keys(left);
   const rightKeys = Object.keys(right);
-  return (
-    leftKeys.length === rightKeys.length &&
-    leftKeys.every(
-      (key) => Object.hasOwn(right, key) && structuredCloneEquals(left[key as never], right[key as never], paired, reversePaired),
-    )
-  );
+  if (leftKeys.length !== rightKeys.length) return false;
+  for (const key of leftKeys) {
+    if (!Object.hasOwn(right, key) || !(await structuredCloneEquals(left[key as never], right[key as never], paired, reversePaired))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function snapshotHistoryState(view: Window): unknown {
+  return view.structuredClone(view.history.state as unknown);
 }
 
 function capturePageState(documentRoot: Document): PageState | null {
   const view = documentRoot.defaultView;
   if (view === null) return null;
   const activeElement = deepestActiveElement(documentRoot);
+  const historyState = view.history.state as unknown;
   return {
     activeElement,
     focusVisible: activeElement?.matches(":focus-visible") ?? false,
     historyLength: view.history.length,
-    historyState: view.history.state as unknown,
+    historyState: view.structuredClone(historyState),
     observedHistoryLength: view.history.length,
-    observedHistoryState: view.history.state as unknown,
+    observedHistoryState: view.structuredClone(historyState),
     scrollX: view.scrollX,
     scrollY: view.scrollY,
     url: view.location.href,
@@ -322,16 +357,16 @@ async function restorePageState(documentRoot: Document, state: PageState): Promi
   };
 }
 
-function historyChanged(state: PageState): boolean {
+async function historyChanged(state: PageState): Promise<boolean> {
   return (
     state.view.location.href !== state.url ||
     state.view.history.length !== state.observedHistoryLength ||
-    !structuredCloneEquals(state.view.history.state, state.observedHistoryState)
+    !(await structuredCloneEquals(state.view.history.state, state.observedHistoryState))
   );
 }
 
-function restoreHistoryState(documentRoot: Document, state: PageState): FocusStyleHistoryMutation | undefined {
-  if (!historyChanged(state)) return undefined;
+async function restoreHistoryState(documentRoot: Document, state: PageState): Promise<FocusStyleHistoryMutation | undefined> {
+  if (!(await historyChanged(state))) return undefined;
   const mutation = {
     actualHistoryLength: state.view.history.length,
     actualUrl: state.view.location.href,
@@ -341,7 +376,7 @@ function restoreHistoryState(documentRoot: Document, state: PageState): FocusSty
   };
   state.view.history.replaceState(state.historyState, "", state.url);
   state.observedHistoryLength = state.view.history.length;
-  state.observedHistoryState = state.view.history.state as unknown;
+  state.observedHistoryState = snapshotHistoryState(state.view);
   return mutation;
 }
 
@@ -364,7 +399,7 @@ async function withPageStatesRestored<T>(
       const entry = states[index];
       const restorationFailure = await restorePageState(entry.documentRoot, entry.state);
       if (restorationFailure !== undefined) restorationFailures.push(restorationFailure);
-      const historyMutation = restoreHistoryState(entry.documentRoot, entry.state);
+      const historyMutation = await restoreHistoryState(entry.documentRoot, entry.state);
       if (historyMutation !== undefined) historyMutations.push(historyMutation);
     }
   }
@@ -427,7 +462,7 @@ export async function runFocusStyleCheck(root: ParentNode): Promise<FocusStyleRe
         else if (result.status === "no-visible-difference") report.noVisibleDifference.push(result.element);
         else report.couldNotFocus.push(result);
         for (const [documentRoot, state] of states) {
-          const historyMutation = restoreHistoryState(documentRoot, state);
+          const historyMutation = await restoreHistoryState(documentRoot, state);
           if (historyMutation !== undefined) report.historyMutations.push(historyMutation);
         }
       }

@@ -363,6 +363,75 @@ describe("FocusStyleCheck page contract", () => {
     expect(report.historyMutations).toEqual([expect.objectContaining({ document, expectedUrl: beforeUrl })]);
   });
 
+  it.each([
+    {
+      name: "Blob",
+      original: new Blob(["original"], { type: "text/plain" }),
+      mutated: new Blob(["mutated!"], { type: "text/plain" }),
+      restoredValue: async (state: unknown) => (state as Blob).text(),
+    },
+    {
+      name: "Error",
+      original: new Error("original"),
+      mutated: new Error("mutated"),
+      restoredValue: (state: unknown) => Promise.resolve((state as Error).message),
+    },
+  ])("detects and restores a same-URL $name history state replacement", async (historyCase) => {
+    const root = fixture(`<button data-structured-history-mutator>${historyCase.name}</button>`);
+    const target = required(root, "[data-structured-history-mutator]");
+    history.replaceState(historyCase.original, "", `#focus-style-${historyCase.name.toLowerCase()}-original`);
+    const beforeUrl = location.href;
+    target.addEventListener("focus", () => {
+      history.replaceState(historyCase.mutated, "", beforeUrl);
+    });
+
+    const report = await runFocusStyleCheck(root);
+
+    expect(await historyCase.restoredValue(history.state)).toBe("original");
+    expect(report.historyMutations).toEqual([expect.objectContaining({ document, expectedUrl: beforeUrl })]);
+  });
+
+  it("snapshots cached history state so in-place nested and Map mutations are restored before the next candidate", async () => {
+    addStyle(`
+      [data-cached-history-observer] { outline: 0 solid transparent; }
+      [data-cached-history-observer]:focus { outline-width: 5px; }
+    `);
+    const root = fixture(`
+      <button data-cached-history-mutator>Cached history mutator</button>
+      <button data-cached-history-observer>Cached history observer</button>
+    `);
+    const mutator = required(root, "[data-cached-history-mutator]");
+    const observer = required(root, "[data-cached-history-observer]");
+    history.replaceState(
+      { nested: { value: "original" }, entries: new Map([["state", "original"]]) },
+      "",
+      "#focus-style-cached-state-original",
+    );
+    const beforeUrl = location.href;
+    let stateDuringObserverFocus: unknown;
+    mutator.addEventListener("focus", () => {
+      const liveState = history.state as { nested: { value: string }; entries: Map<string, string> };
+      liveState.nested.value = "mutated";
+      liveState.entries.set("state", "mutated");
+    });
+    observer.addEventListener("focus", () => {
+      stateDuringObserverFocus = history.state;
+    });
+
+    const report = await runFocusStyleCheck(root);
+
+    expect(stateDuringObserverFocus).toEqual({
+      nested: { value: "original" },
+      entries: new Map([["state", "original"]]),
+    });
+    expect(history.state).toEqual({
+      nested: { value: "original" },
+      entries: new Map([["state", "original"]]),
+    });
+    expect(report.styleDifferences).toContainEqual(expect.objectContaining({ element: observer }));
+    expect(report.historyMutations).toEqual([expect.objectContaining({ document, expectedUrl: beforeUrl })]);
+  });
+
   it("restores another visited document's history before inspecting its later candidate", async () => {
     const outerFrame = document.createElement("iframe");
     outerFrame.dataset.focusStyleFixture = "";
