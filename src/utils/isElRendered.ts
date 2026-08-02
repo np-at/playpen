@@ -1,8 +1,8 @@
 const DOCUMENT_POSITION_CONTAINED_BY = 16;
 const MAX_ANCESTORS = 1000;
 
-/** The parent that affects an element's rendering, including shadow and iframe boundaries. */
-function renderedParent(el: Element): Element | null {
+/** The composed parent that can affect an element, including shadow and iframe boundaries. */
+export function renderedParent(el: Element): Element | null {
   if (el.parentElement !== null) return el.parentElement;
 
   const root = el.getRootNode();
