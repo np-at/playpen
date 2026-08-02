@@ -159,7 +159,7 @@ function MakeSkele(root: Document): void {
   const nodes = roots.supported.flatMap((selectorRoot) => {
     if (selectorRoot.nodeType === Node.DOCUMENT_NODE) {
       const body = (selectorRoot as Document).body;
-      return body ? [hashNode(body)] : [];
+      return [hashNode(body)];
     }
     return Array.from(selectorRoot.children).map((child) => hashNode(child));
   });

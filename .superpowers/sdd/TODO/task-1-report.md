@@ -183,3 +183,29 @@ pnpm test
 ```
 
 Result: focused suite passed with 3 files and 17 tests; TypeScript and Vite build passed; full suite passed with 14 files and 86 tests.
+
+## Lint follow-up
+
+### Changes
+
+- Replaced task-added test non-null assertions with explicit fixture checks/narrowing.
+- Simplified MakeSkele's always-present document-body branch.
+
+### RED/GREEN evidence
+
+RED command:
+
+```text
+pnpm lint
+```
+
+Result: failed with 34 errors: forbidden non-null assertions in the selector tests and one unnecessary MakeSkele conditional.
+
+GREEN commands:
+
+```text
+pnpm lint
+pnpm test src/utils/finder.test.ts src/utils/DOMPath.test.ts src/_bookmarklets/Pathify.test.ts src/_bookmarklets/MonitorAriaLive.test.ts
+```
+
+Result: lint passed with no errors; focused browser suite passed with 4 files and 19 tests. The focused test command was rerun outside the sandbox after the sandbox denied Vitest's local server bind (`EPERM ::1:12222`).

@@ -8,7 +8,9 @@ it("renders a shadow-root selector with MonitorAriaLive root context", () => {
   const shadow = host.attachShadow({ mode: "open" });
   shadow.innerHTML = "<div aria-live=polite>Saved</div>";
 
-  const output = monitorSelectorText(shadow.querySelector("[aria-live]")!);
+  const target = shadow.querySelector("[aria-live]");
+  if (!target) throw new Error("Monitor live-region fixture was not created");
+  const output = monitorSelectorText(target);
 
   expect(output).toContain("top-document > shadow-root(#monitor-host) :: ");
   host.remove();

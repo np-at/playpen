@@ -19,8 +19,11 @@ describe("xPath", () => {
     element.append(document.createComment("one"), document.createComment("two"));
     document.body.appendChild(element);
 
-    expect(xPath(element.childNodes[1]!)).toContain("text()[2]");
-    expect(xPath(element.childNodes[3]!)).toContain("comment()[2]");
+    expect(element.childNodes).toHaveLength(4);
+    const secondText = element.childNodes[1];
+    const secondComment = element.childNodes[3];
+    expect(xPath(secondText)).toContain("text()[2]");
+    expect(xPath(secondComment)).toContain("comment()[2]");
     element.remove();
   });
 });

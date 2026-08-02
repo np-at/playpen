@@ -9,7 +9,9 @@ it("exports shadow-root context with Pathify selector output", () => {
   const shadow = host.attachShadow({ mode: "open" });
   shadow.innerHTML = "<button>Save</button>";
 
-  const output = pathifySelectorText(findSelector(shadow.querySelector("button")!));
+  const target = shadow.querySelector("button");
+  if (!target) throw new Error("Pathify shadow button fixture was not created");
+  const output = pathifySelectorText(findSelector(target));
 
   expect(output).toContain("top-document > shadow-root(#pathify-host) :: button");
   host.remove();
