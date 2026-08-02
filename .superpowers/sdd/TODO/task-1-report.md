@@ -55,4 +55,4 @@ None.
 
 ## Commit
 
-`0ef3bc1` (`fix(bookmarklets): consolidate selector generation`)
+`e325650` (`fix(bookmarklets): consolidate selector generation`)
