@@ -157,14 +157,14 @@ These tasks establish the contracts required by all later work.
 
 **Files:** `src/_bookmarklets/FocusStyleCheck.ts`; shared lifecycle/rendering utilities
 
-- [ ] Replace fragment navigation and `location.assign()` with `el.focus({preventScroll: true})`.
-- [ ] Wait for an animation frame, verify `document.activeElement === el`, and only then collect focused styles.
-- [ ] Preserve and restore the original active element, scroll position, URL/hash, reliably comparable history state, and any temporary attributes; report that arbitrary `History.state` structured-clone representations cannot be guaranteed fully restorable.
-- [ ] Do not add permanent IDs to tested elements.
-- [ ] Replace the incomplete selector with tested focusability logic covering native controls, links, summary, editable content,
+- [x] Replace fragment navigation and `location.assign()` with `el.focus({preventScroll: true})`.
+- [x] Wait for an animation frame, verify `document.activeElement === el`, and only then collect focused styles.
+- [x] Preserve and restore the original active element, scroll position, URL/hash, reliably comparable history state, and any temporary attributes; report that arbitrary `History.state` structured-clone representations cannot be guaranteed fully restorable.
+- [x] Do not add permanent IDs to tested elements.
+- [x] Replace the incomplete selector with tested focusability logic covering native controls, links, summary, editable content,
   media controls, and programmatically focusable elements while excluding disabled/inert/hidden candidates.
-- [ ] Distinguish "could not focus" from "focused but no visible style difference" in output.
-- [ ] Add tests for `:focus`, `:focus-visible`, pseudo-element focus styles, programmatic-only targets, and no page-state changes.
+- [x] Distinguish "could not focus" from "focused but no visible style difference" in output.
+- [x] Add tests for `:focus`, `:focus-visible`, pseudo-element focus styles, programmatic-only targets, and no page-state changes.
 
 ### Repair the focus trace tool (`fcs`)
 
