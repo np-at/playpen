@@ -1,7 +1,7 @@
 import { getObjectDiff, type ObjectDiff } from "@donedeal0/superdiff";
 import { sleep } from "../utils/sleep.ts";
 import { short_uuid } from "../utils/stringUtils.ts";
-import { isElRendered } from "../utils/isElRendered.ts";
+import { isElAriaHidden, isElRendered } from "../utils/isElRendered.ts";
 
 function styleToObject(style: CSSStyleDeclaration): Record<string, string> {
   const result: Record<string, string> = {};
@@ -32,15 +32,11 @@ function getFocusRelevantStyles(el: HTMLElement) {
 
 async function testFocusStyles(el: HTMLElement): Promise<ObjectDiff | null> {
   // assume that elements with aria-hidden, or elements descended from aria-hidden are not meant to receive focus
-  if (el.closest('[aria-hidden="true"]') !== null) return null;
+  if (isElAriaHidden(el)) return null;
   // same for inert
   if (el.closest("[inert]") !== null) return null;
   // assume natively focusable elements with tabindex="-1" are intentionally removed from focus order (ie not going to be a programmatic focus target)
-  if (
-    el.getAttribute("tabindex") === "-1" &&
-    ["a", "button", "input"].includes(el.tagName.toLowerCase())
-  )
-    return null;
+  if (el.getAttribute("tabindex") === "-1" && ["a", "button", "input"].includes(el.tagName.toLowerCase())) return null;
 
   if (el.getAttribute("id") === null) {
     el.setAttribute("id", short_uuid());

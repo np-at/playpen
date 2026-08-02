@@ -1,5 +1,6 @@
 // Sourced from https://github.com/hinderlingvolkart/h123/blob/master/src/bookmarklet.js
 import { collectSelectorRoots } from "../utils/finder.ts";
+import { isElAriaHidden, isElRendered } from "../utils/isElRendered.ts";
 
 const containerId = "a11y-bookmarklet";
 const containerStyle =
@@ -197,33 +198,7 @@ function htmlEntities(str?: string): string {
 
 function isVisible(el: Element | null): boolean {
   if (el == null) return true;
-  let css = window.getComputedStyle(el);
-  let cssVisible = false;
-  while (el) {
-    if (css.display === "none") {
-      return false;
-    }
-    if (!cssVisible) {
-      if (css.visibility === "hidden") {
-        return false;
-      }
-      if (css.visibility === "visible") {
-        cssVisible = true;
-      }
-    }
-    if (el.getAttribute("aria-hidden") === "true") {
-      return false;
-    }
-    el = el.parentElement;
-    try {
-      if (el) {
-        css = window.getComputedStyle(el);
-      }
-    } catch {
-      return true; // happens on window element
-    }
-  }
-  return true;
+  return isElRendered(el) && !isElAriaHidden(el);
 }
 
 function isVisuallyHidden(el: Element): true | undefined {

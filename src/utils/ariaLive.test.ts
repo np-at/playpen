@@ -158,9 +158,17 @@ describe("resolveLiveRegion", () => {
 });
 
 describe("liveRegionText", () => {
-  it("ignores aria-hidden, hidden and display:none subtrees", () => {
-    const el = mount(`<div>keep<span aria-hidden="true">no</span><span hidden>no</span><span style="display:none">no</span></div>`);
+  it("ignores subtrees hidden from assistive technology by HTML, ARIA, or CSS", () => {
+    const el = mount(
+      `<div>keep<span aria-hidden="true">no</span><span hidden>no</span><span style="display:none">no</span><span style="visibility:hidden">no</span><span style="content-visibility:hidden">no</span></div>`,
+    );
     expect(liveRegionText(el).trim()).toBe("keep");
+  });
+
+  it("ignores a subtree whose ancestor outside the supplied root is aria-hidden", () => {
+    const el = mount(`<div aria-hidden="true"><span>not announced</span></div>`);
+
+    expect(liveRegionText(q(el, "span"))).toBe("");
   });
 
   it("substitutes image alt text and skips script and style", () => {
