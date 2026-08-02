@@ -37,6 +37,14 @@ function addStyle(cssText: string): HTMLStyleElement {
   return style;
 }
 
+function animationFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      resolve();
+    });
+  });
+}
+
 afterEach(() => {
   harness?.restore();
   harness = undefined;
@@ -97,6 +105,27 @@ describe("FocusStyleCheck candidate discovery", () => {
 });
 
 describe("FocusStyleCheck focus inspection", () => {
+  it("reports that it cannot isolate a baseline when a prior focus blur redirects on the next animation frame", async () => {
+    const root = fixture(`
+      <button data-prior-focus>Prior focus</button>
+      <button data-redirected-focus>Redirected focus</button>
+      <button data-inspection-target>Inspection target</button>
+    `);
+    const prior = required(root, "[data-prior-focus]");
+    const redirected = required(root, "[data-redirected-focus]");
+    const target = required(root, "[data-inspection-target]");
+    prior.focus({ preventScroll: true });
+    prior.addEventListener("blur", () => {
+      requestAnimationFrame(() => {
+        redirected.focus({ preventScroll: true });
+      });
+    });
+
+    const result = await inspectFocusStyle(target);
+
+    expect(result).toMatchObject({ status: "could-not-focus", element: target, reason: "could-not-clear-prior-focus" });
+  });
+
   it("collects styles applied by :focus after actual focus", async () => {
     addStyle(`
       [data-focus-rule] { outline: 0 solid transparent; }
@@ -193,6 +222,106 @@ describe("FocusStyleCheck focus inspection", () => {
 });
 
 describe("FocusStyleCheck page contract", () => {
+  it("captures each candidate baseline after clearing the preceding candidate's focus", async () => {
+    addStyle(`
+      [data-baseline-second] { outline: 0 solid transparent; }
+      [data-baseline-root]:focus-within [data-baseline-second] { outline: 9px solid rgb(30, 31, 32); }
+      [data-baseline-second]:focus { outline: 6px solid rgb(33, 34, 35) !important; }
+    `);
+    const root = fixture(`
+      <div data-baseline-root>
+        <button data-baseline-first>First candidate</button>
+        <button data-baseline-second>Second candidate</button>
+      </div>
+    `);
+    const second = required(root, "[data-baseline-second]");
+
+    const report = await runFocusStyleCheck(root);
+    const secondResult = report.styleDifferences.find(({ element }) => element === second);
+
+    expect(secondResult?.differences).toContainEqual({
+      target: "element",
+      property: "outline-width",
+      unfocused: "0px",
+      focused: "6px",
+    });
+  });
+
+  it("restores focus and scroll after restoration-triggered animation-frame handlers settle", async () => {
+    addStyle(`[data-inspection-target] { outline: none; }`);
+    const original = required(fixture("<button data-original-focus>Original focus</button>"), "button");
+    const root = fixture(`
+      <div style="height: 2400px"></div>
+      <button data-inspection-target>Inspection target</button>
+      <button data-redirected-focus>Redirected focus</button>
+    `);
+    const redirected = required(root, "[data-redirected-focus]");
+    original.focus({ preventScroll: true });
+    window.scrollTo(0, 180);
+    let redirectOnce = true;
+    original.addEventListener("focus", () => {
+      if (!redirectOnce) return;
+      redirectOnce = false;
+      requestAnimationFrame(() => {
+        redirected.focus({ preventScroll: true });
+        window.scrollTo(0, 480);
+      });
+    });
+
+    await runFocusStyleCheck(root);
+    await animationFrame();
+
+    expect(document.activeElement).toBe(original);
+    expect(window.scrollY).toBe(180);
+  });
+
+  it("restores current URL and state while explicitly reporting irreversible focus-handler history mutations", async () => {
+    const mutations = [
+      {
+        name: "push",
+        mutate: () => {
+          history.pushState({ pushed: true }, "", "#focus-style-pushed");
+        },
+      },
+      {
+        name: "hash",
+        mutate: () => {
+          location.hash = "focus-style-hash";
+        },
+      },
+      {
+        name: "replace",
+        mutate: () => {
+          history.replaceState({ replaced: true }, "", "#focus-style-replaced");
+        },
+      },
+    ];
+
+    for (const { name, mutate } of mutations) {
+      const root = fixture(`<button data-history-mutation>${name}</button>`);
+      const target = required(root, "[data-history-mutation]");
+      history.replaceState({ original: name }, "", `#focus-style-original-${name}`);
+      const before = {
+        historyLength: history.length,
+        state: history.state as unknown,
+        url: location.href,
+      };
+      target.addEventListener("focus", mutate);
+
+      const report = await runFocusStyleCheck(root);
+
+      expect(location.href).toBe(before.url);
+      expect(history.state).toEqual(before.state);
+      expect(report.historyMutations).toEqual([
+        expect.objectContaining({
+          document,
+          expectedHistoryLength: before.historyLength,
+          expectedUrl: before.url,
+        }),
+      ]);
+    }
+  });
+
   it("inspects candidates in open shadow roots and nested same-origin frames", async () => {
     const outerFrame = document.createElement("iframe");
     outerFrame.dataset.focusStyleFixture = "";

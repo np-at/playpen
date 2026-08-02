@@ -11,12 +11,34 @@ export type FocusStyleDifference = {
 export type FocusStyleInspection =
   | { status: "style-difference"; element: HTMLElement; differences: FocusStyleDifference[] }
   | { status: "no-visible-difference"; element: HTMLElement }
-  | { status: "could-not-focus"; element: HTMLElement; reason: "focus-was-not-retained" | "no-window" };
+  | {
+      status: "could-not-focus";
+      element: HTMLElement;
+      reason: "focus-was-not-retained" | "no-window" | "could-not-clear-prior-focus";
+    };
+
+export type FocusStyleRestorationFailure = {
+  actualActiveElement: Element | null;
+  actualScroll: { x: number; y: number };
+  document: Document;
+  expectedActiveElement: Element | null;
+  expectedScroll: { x: number; y: number };
+};
+
+export type FocusStyleHistoryMutation = {
+  actualHistoryLength: number;
+  actualUrl: string;
+  document: Document;
+  expectedHistoryLength: number;
+  expectedUrl: string;
+};
 
 export type FocusStyleReport = {
   styleDifferences: Array<Extract<FocusStyleInspection, { status: "style-difference" }>>;
   noVisibleDifference: HTMLElement[];
   couldNotFocus: Array<Extract<FocusStyleInspection, { status: "could-not-focus" }>>;
+  historyMutations: FocusStyleHistoryMutation[];
+  restorationFailures: FocusStyleRestorationFailure[];
 };
 
 type StyleTarget = FocusStyleDifference["target"];
@@ -158,11 +180,26 @@ function blur(element: Element | null): void {
   if (element !== null && isHtmlOrSvgElement(element)) element.blur();
 }
 
+function clearDocumentFocus(documentRoot: Document): void {
+  blur(deepestActiveElement(documentRoot));
+  if (documentRoot.activeElement !== documentRoot.body && documentRoot.activeElement !== documentRoot.documentElement) {
+    blur(documentRoot.activeElement);
+  }
+}
+
+function documentFocusIsCleared(documentRoot: Document): boolean {
+  const activeElement = deepestActiveElement(documentRoot);
+  return activeElement === null || activeElement === documentRoot.body || activeElement === documentRoot.documentElement;
+}
+
 type PageState = {
   activeElement: Element | null;
   focusVisible: boolean;
+  historyLength: number;
+  historyState: unknown;
   scrollX: number;
   scrollY: number;
+  url: string;
   view: Window;
 };
 
@@ -173,40 +210,93 @@ function capturePageState(documentRoot: Document): PageState | null {
   return {
     activeElement,
     focusVisible: activeElement?.matches(":focus-visible") ?? false,
+    historyLength: view.history.length,
+    historyState: view.history.state as unknown,
     scrollX: view.scrollX,
     scrollY: view.scrollY,
+    url: view.location.href,
     view,
   };
 }
 
-function restorePageState(documentRoot: Document, state: PageState): void {
+function restoreFocusAndScroll(documentRoot: Document, state: PageState): void {
   if (
     state.activeElement === documentRoot.body ||
     state.activeElement === documentRoot.documentElement ||
     state.activeElement === null
   ) {
-    blur(deepestActiveElement(documentRoot));
-    if (documentRoot.activeElement !== documentRoot.body && documentRoot.activeElement !== documentRoot.documentElement) {
-      blur(documentRoot.activeElement);
-    }
+    clearDocumentFocus(documentRoot);
   } else if (state.activeElement.isConnected) {
     focusWithoutScrolling(state.activeElement, state.focusVisible);
   }
   state.view.scrollTo({ behavior: "instant", left: state.scrollX, top: state.scrollY });
 }
 
-async function withPageStatesRestored<T>(documents: Document[], operation: () => Promise<T>): Promise<T> {
+function pageStateMatches(documentRoot: Document, state: PageState): boolean {
+  return (
+    deepestActiveElement(documentRoot) === state.activeElement &&
+    state.view.scrollX === state.scrollX &&
+    state.view.scrollY === state.scrollY
+  );
+}
+
+async function restorePageState(documentRoot: Document, state: PageState): Promise<FocusStyleRestorationFailure | undefined> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    restoreFocusAndScroll(documentRoot, state);
+    await nextAnimationFrame(state.view);
+    if (pageStateMatches(documentRoot, state)) return undefined;
+  }
+  return {
+    actualActiveElement: deepestActiveElement(documentRoot),
+    actualScroll: { x: state.view.scrollX, y: state.view.scrollY },
+    document: documentRoot,
+    expectedActiveElement: state.activeElement,
+    expectedScroll: { x: state.scrollX, y: state.scrollY },
+  };
+}
+
+function historyChanged(state: PageState): boolean {
+  return (
+    state.view.location.href !== state.url ||
+    state.view.history.length !== state.historyLength ||
+    !Object.is(state.view.history.state, state.historyState)
+  );
+}
+
+function restoreHistoryState(documentRoot: Document, state: PageState): FocusStyleHistoryMutation | undefined {
+  if (!historyChanged(state)) return undefined;
+  const mutation = {
+    actualHistoryLength: state.view.history.length,
+    actualUrl: state.view.location.href,
+    document: documentRoot,
+    expectedHistoryLength: state.historyLength,
+    expectedUrl: state.url,
+  };
+  state.view.history.replaceState(state.historyState, "", state.url);
+  return mutation;
+}
+
+async function withPageStatesRestored<T>(
+  documents: Document[],
+  operation: (states: Map<Document, PageState>) => Promise<T>,
+): Promise<{ historyMutations: FocusStyleHistoryMutation[]; restorationFailures: FocusStyleRestorationFailure[]; result: T }> {
   const states = documents.flatMap((documentRoot) => {
     const state = capturePageState(documentRoot);
     return state === null ? [] : [{ documentRoot, state }];
   });
+  const historyMutations: FocusStyleHistoryMutation[] = [];
+  const restorationFailures: FocusStyleRestorationFailure[] = [];
 
   try {
-    return await operation();
+    const result = await operation(new Map(states.map(({ documentRoot, state }) => [documentRoot, state])));
+    return { historyMutations, restorationFailures, result };
   } finally {
     for (let index = states.length - 1; index >= 0; index -= 1) {
       const entry = states[index];
-      restorePageState(entry.documentRoot, entry.state);
+      const restorationFailure = await restorePageState(entry.documentRoot, entry.state);
+      if (restorationFailure !== undefined) restorationFailures.push(restorationFailure);
+      const historyMutation = restoreHistoryState(entry.documentRoot, entry.state);
+      if (historyMutation !== undefined) historyMutations.push(historyMutation);
     }
   }
 }
@@ -228,9 +318,10 @@ export async function inspectFocusStyle(element: HTMLElement): Promise<FocusStyl
   const view = documentRoot.defaultView;
   if (view === null) return { status: "could-not-focus", element, reason: "no-window" };
 
-  if (activeElementFor(element) === element) {
-    element.blur();
-    await nextAnimationFrame(view);
+  clearDocumentFocus(documentRoot);
+  await nextAnimationFrame(view);
+  if (!documentFocusIsCleared(documentRoot)) {
+    return { status: "could-not-focus", element, reason: "could-not-clear-prior-focus" };
   }
   const unfocused = captureStyles(element);
 
@@ -247,22 +338,31 @@ export async function inspectFocusStyle(element: HTMLElement): Promise<FocusStyl
 }
 
 export async function runFocusStyleCheck(root: ParentNode): Promise<FocusStyleReport> {
-  const report: FocusStyleReport = { styleDifferences: [], noVisibleDifference: [], couldNotFocus: [] };
+  const report: FocusStyleReport = {
+    couldNotFocus: [],
+    historyMutations: [],
+    noVisibleDifference: [],
+    restorationFailures: [],
+    styleDifferences: [],
+  };
   const roots: ParentNode[] =
     root.nodeType === Node.DOCUMENT_NODE || (root.nodeType === Node.DOCUMENT_FRAGMENT_NODE && "host" in root)
       ? collectSelectorRoots(root as SelectorRoot).visited
       : [root];
   const documents = Array.from(new Set(roots.map(documentFor)));
-  await withPageStatesRestored(documents, async () => {
+  const outcome = await withPageStatesRestored(documents, async (states) => {
     for (const currentRoot of roots) {
       for (const element of findFocusCandidates(currentRoot)) {
         const result = await inspectFocusStyle(element);
         if (result.status === "style-difference") report.styleDifferences.push(result);
         else if (result.status === "no-visible-difference") report.noVisibleDifference.push(result.element);
         else report.couldNotFocus.push(result);
+        if (Array.from(states.values()).some(historyChanged)) return;
       }
     }
   });
+  report.historyMutations.push(...outcome.historyMutations);
+  report.restorationFailures.push(...outcome.restorationFailures);
   return report;
 }
 
@@ -276,9 +376,20 @@ export function writeFocusStyleReport(report: FocusStyleReport): void {
   if (report.couldNotFocus.length > 0) {
     console.info("Focus Style Check: could not focus", report.couldNotFocus);
   }
+  if (report.restorationFailures.length > 0) {
+    console.error("Focus Style Check: could not restore focus or scroll", report.restorationFailures);
+  }
+  if (report.historyMutations.length > 0) {
+    console.error(
+      "Focus Style Check: page focus handlers changed history; URL and state were restored, but browser history entries cannot be safely removed",
+      report.historyMutations,
+    );
+  }
   console.info("Focus Style Check: complete", {
+    historyMutations: report.historyMutations.length,
     visibleStyleDifferences: report.styleDifferences.length,
     noVisibleDifference: report.noVisibleDifference.length,
     couldNotFocus: report.couldNotFocus.length,
+    restorationFailures: report.restorationFailures.length,
   });
 }
