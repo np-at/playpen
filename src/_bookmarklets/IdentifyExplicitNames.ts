@@ -35,6 +35,17 @@ interface LabelledElement {
   target: Element;
 }
 
+export function identifyExternalLabels(target: Element): LabelledElement[] {
+  return Array.from(document.querySelectorAll("label"))
+    .map(IdentifyLabelTargets)
+    .filter((labelTarget): labelTarget is HTMLElement => labelTarget != null && target.contains(labelTarget))
+    .map((labelTarget) => ({
+      name: getName(labelTarget),
+      labellingMethod: Labelling.externalLabel,
+      target: labelTarget,
+    }));
+}
+
 function IdentifyExplicitNames(target: Element): boolean {
   console.log("target: ", target);
   console.log("name: ", getName(target));
@@ -60,18 +71,7 @@ function IdentifyExplicitNames(target: Element): boolean {
     });
   }
 
-  // TODO: this is dumb.  why are we looking at labels inside the target when the name can be provided by a label outside the target?
-  const hasExternalLabel: LabelledElement[] = Array.from(target.querySelectorAll("label"))
-    .map(IdentifyLabelTargets)
-    .map(
-      (x) =>
-        x != null && {
-          name: getName(x),
-          labellingMethod: Labelling.externalLabel,
-          target: x,
-        },
-    )
-    .filter((x) => x !== false);
+  const hasExternalLabel = identifyExternalLabels(target);
   console.dir("hasAriaLabel: ", hasAriaLabel);
   console.dir("hasAriaLabeledBy: ", hasAriaLabeledBy);
   console.dir("hasExternalLabel: ", hasExternalLabel);
