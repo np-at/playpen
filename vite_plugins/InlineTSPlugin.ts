@@ -54,7 +54,6 @@ async function compile(inputFile: string, minify: boolean, isDebug = false) {
           treeShaking: true,
           keepNames: false,
           legalComments: "none",
-          format: "esm",
           mangleProps: /_$/,
           minifyWhitespace: true,
           minifyIdentifiers: true,

@@ -10,7 +10,7 @@ const SOURCE_ROOT = "src/";
 
 function findFiles(matchRegex: RegExp | RegExp[], opts?: { startDir: string; ignore?: RegExp[] }): string[] {
   const startDir = opts?.startDir ?? __dirname;
-  const ignoreRE = opts?.ignore ?? [/node_modules/, /\.git/, /dist/];
+  const ignoreRE = opts?.ignore ?? [/node_modules/, /\.git/, /dist/, /\.worktrees/];
   const _matchRE = Array.isArray(matchRegex) ? matchRegex : [matchRegex];
   const files = readdirSync(startDir, { withFileTypes: true, recursive: false });
   const matches: string[] = [];
