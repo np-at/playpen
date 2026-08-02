@@ -55,7 +55,7 @@ export function isElRendered(el: Element): boolean {
       return false;
     }
 
-    if (cur.localName === "details" && !cur.hasAttribute("open")) {
+    if (!cur.isSameNode(el) && cur.localName === "details" && !cur.hasAttribute("open")) {
       const summary = firstSummary(cur);
       if (summary === null || !containsByDocumentPosition(summary, branch)) return false;
     }

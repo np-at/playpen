@@ -9,7 +9,7 @@
  * announce. Real assistive technology varies; see {@link Announcement.notes}.
  */
 
-import { isElAriaHidden } from "./isElRendered.ts";
+import { isElAriaHidden, isElRendered } from "./isElRendered.ts";
 
 export type Politeness = "polite" | "assertive";
 export type Relevant = "additions" | "removals" | "text";
@@ -156,6 +156,9 @@ export function resolveLiveRegion(node: Node): LiveContext | null {
 
 function isHiddenForAT(el: Element): boolean {
   if (isElAriaHidden(el)) return true;
+  // Connected nodes are subject to hiding outside the subtree passed to
+  // liveRegionText. Detached mutation payloads still need their text captured.
+  if (el.isConnected && !isElRendered(el)) return true;
   if (el.hasAttribute("hidden")) return true;
   const style = el.ownerDocument.defaultView?.getComputedStyle(el);
   if (style === undefined) return false;

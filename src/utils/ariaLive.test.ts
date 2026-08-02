@@ -171,6 +171,16 @@ describe("liveRegionText", () => {
     expect(liveRegionText(q(el, "span"))).toBe("");
   });
 
+  it.each([
+    ["the hidden attribute", "hidden"],
+    ["display:none", 'style="display:none"'],
+    ["content-visibility:hidden", 'style="content-visibility:hidden"'],
+  ])("ignores a subtree whose ancestor outside the supplied root uses %s", (_label, attribute) => {
+    const el = mount(`<div ${attribute}><span>not announced</span></div>`);
+
+    expect(liveRegionText(q(el, "span"))).toBe("");
+  });
+
   it("substitutes image alt text and skips script and style", () => {
     const el = mount(`<div><img alt="a cat"><style>p{color:red}</style><script>void 0;</script></div>`);
     expect(liveRegionText(el).trim()).toBe("a cat");

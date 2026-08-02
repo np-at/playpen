@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { isElRendered } from "./isElRendered.ts";
+import { isElAriaHidden, isElRendered } from "./isElRendered.ts";
 
 afterEach(() => {
   document.body.replaceChildren();
@@ -19,6 +19,12 @@ function required(root: ParentNode, selector: string): HTMLElement {
 }
 
 describe("isElRendered", () => {
+  it("treats the closed details element itself as rendered", () => {
+    const details = mount("<details><summary>More</summary><div>Hidden</div></details>");
+
+    expect(isElRendered(details)).toBe(true);
+  });
+
   it("treats content outside the first summary of closed details as not rendered", () => {
     const details = mount("<details><summary>More</summary><div id=content>Hidden</div></details>");
 
@@ -68,6 +74,25 @@ describe("isElRendered", () => {
     const parent = mount('<div aria-hidden="true"><span id=child></span></div>');
 
     expect(isElRendered(required(parent, "#child"))).toBe(true);
+  });
+
+  it("finds an aria-hidden shadow host", () => {
+    const host = mount('<div aria-hidden="true"></div>');
+    const root = host.attachShadow({ mode: "open" });
+    const target = document.createElement("span");
+    root.appendChild(target);
+
+    expect(isElAriaHidden(target)).toBe(true);
+  });
+
+  it("finds an aria-hidden same-origin iframe element", () => {
+    const frame = document.createElement("iframe");
+    frame.setAttribute("aria-hidden", "true");
+    document.body.appendChild(frame);
+    const frameDocument = frame.contentDocument;
+    if (frameDocument === null) throw new Error("iframe document was not created");
+
+    expect(isElAriaHidden(frameDocument.body)).toBe(true);
   });
 
   it("treats disconnected elements as not rendered", () => {

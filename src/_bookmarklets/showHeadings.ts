@@ -203,7 +203,8 @@ function isVisible(el: Element | null): boolean {
 
 function isVisuallyHidden(el: Element): true | undefined {
   const size = el.getBoundingClientRect();
-  const css = window.getComputedStyle(el);
+  const css = el.ownerDocument.defaultView?.getComputedStyle(el);
+  if (css === undefined) return;
   if (css.position === "absolute") {
     if (size.width <= 1 && size.height <= 1) {
       return true;
