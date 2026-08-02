@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { applyToShadows } from "./applyToShadows.ts";
 import { digIntoIframes } from "./digIntoIframes.ts";
+import { collectSelectorRoots } from "./finder.ts";
 
 const fixtures: Element[] = [];
 
@@ -62,5 +63,21 @@ describe("bookmarklet root traversal", () => {
     expect(firstSnapshot.visited).toContain(firstShadow);
     expect(firstSnapshot.visited).not.toContain(laterShadow);
     expect(secondSnapshot.visited).toContain(laterShadow);
+  });
+
+  it("stops a traversal cycle at the first visit", () => {
+    const cyclicRoot = {
+      nodeType: Node.DOCUMENT_FRAGMENT_NODE,
+      querySelectorAll: () => [cyclicElement],
+    } as unknown as ShadowRoot;
+    const cyclicElement = {
+      shadowRoot: cyclicRoot,
+      localName: "div",
+    } as unknown as Element;
+
+    const snapshot = collectSelectorRoots(cyclicRoot);
+
+    expect(snapshot.visited).toEqual([cyclicRoot]);
+    expect(snapshot.visited.filter((root) => root === cyclicRoot)).toHaveLength(1);
   });
 });

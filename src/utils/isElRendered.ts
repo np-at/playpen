@@ -30,7 +30,7 @@ export function isElRendered(el: HTMLElement): boolean {
       throw new Error("reached cycle limit");
     }
     if (!detailsAncestor.open) {
-      const summaryNode = Array.from(detailsAncestor.children).filter((x) => x instanceof HTMLElement && x.tagName === "SUMMARY");
+      const summaryNode = Array.from(detailsAncestor.children).filter((child) => child.localName === "summary");
       if (summaryNode.length > 1) {
         console.error("invalid number of summary element children found", detailsAncestor);
         throw new Error("invalid number of summary element children found");
@@ -45,11 +45,13 @@ export function isElRendered(el: HTMLElement): boolean {
     }
   }
   c = 0;
-  while (cur !== null && !cur.isSameNode(document.body)) {
+  while (cur !== null && !cur.isSameNode(cur.ownerDocument.body)) {
     if (!cur.isConnected) {
       return false;
     }
-    const computedStyle = window.getComputedStyle(cur);
+    const view = cur.ownerDocument.defaultView;
+    if (view === null) return false;
+    const computedStyle = view.getComputedStyle(cur);
     if (computedStyle.display === "none") return false;
     cur = cur.parentElement;
     c += 1;

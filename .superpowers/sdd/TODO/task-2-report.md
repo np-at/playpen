@@ -59,3 +59,51 @@ Outcome: 2/2 tests passed after introducing the synchronous shared snapshot cont
 ## Commit
 
 - `b447d0f fix(bookmarklets): unify root traversal`
+
+## Review fix round 1
+
+### Root causes and fixes
+
+- `MutationObserver` does not report `attachShadow()` on an already-connected host. Rather than patch page prototypes, MonitorAriaLive now explicitly labels its root scan as a snapshot and tells users to re-run it for such roots.
+- The monitor generated caveat text once, so later skipped frames were not shown. It now updates both the closed panel caveat and a status mirror on its owned host whenever a new inaccessible frame is discovered.
+- `isElRendered()` used top-realm `instanceof HTMLElement`, top-document `body`, and top-window `getComputedStyle`. It now detects summary elements by `localName` and uses each element's owner document and realm.
+- TextSpacing used the generic `phltsbkmklt` id as toggle state. It now uses `bookmarkletLifecycle` under the namespaced `text-spacing` tool identity, so only its own styles are removed.
+- The previous duplicate assertion did not create a repeatable path. The traversal tests now use a cyclic root fixture and assert that the root is returned exactly once.
+
+### Added or updated files
+
+- `src/_bookmarklets/MonitorAriaLive.ts`
+- `src/_bookmarklets/MonitorAriaLive.test.ts`
+- `src/_bookmarklets/TextSpacing.ts`
+- `src/_bookmarklets/TextSpacing.test.ts` (new)
+- `src/utils/isElRendered.ts`
+- `src/utils/isElRendered.test.ts` (new)
+- `src/utils/traversal.test.ts`
+
+### TDD record
+
+#### RED
+
+```sh
+pnpm vitest run src/utils/isElRendered.test.ts src/_bookmarklets/TextSpacing.test.ts src/_bookmarklets/MonitorAriaLive.test.ts src/utils/traversal.test.ts
+```
+
+Outcome: 3 expected failures: iframe-realm content under closed `details` was reported rendered; TextSpacing removed a page-owned legacy style; and MonitorAriaLive had no updated caveat status after a dynamically added blocked frame. The strengthened cycle assertion already passed because the shared traversal set guard existed.
+
+```sh
+pnpm vitest run src/utils/isElRendered.test.ts
+```
+
+Outcome: the additional no-`defaultView` regression failed with `TypeError: Cannot read properties of null (reading 'getComputedStyle')`.
+
+#### GREEN
+
+```sh
+pnpm lint && pnpm vitest run src/utils/isElRendered.test.ts src/_bookmarklets/TextSpacing.test.ts src/_bookmarklets/MonitorAriaLive.test.ts src/utils/traversal.test.ts && pnpm build
+```
+
+Outcome: lint passed; 4 focused files / 8 tests passed; `tsc && vite build` passed. The build retained the repository's existing large-chunk advisory.
+
+### Fix-round validation
+
+- Full suite and final commit validation are recorded with the fix commit.

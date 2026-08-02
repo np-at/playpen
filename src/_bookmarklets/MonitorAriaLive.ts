@@ -30,6 +30,16 @@ import { isElRendered } from "../utils/isElRendered.ts";
 const HOST_ID = "aria-live-monitor-host";
 const MAX_ENTRIES = 200;
 
+function monitorCaveatText(skippedFrameCount: number): string {
+  return (
+    "Messages are an approximation; real screen readers differ. Closed shadow roots cannot be observed. " +
+    "This monitor's root scan is a snapshot: open shadow roots attached to already-connected hosts after activation require re-running it." +
+    (skippedFrameCount > 0
+      ? ` ${skippedFrameCount.toString()} cross-origin iframe${skippedFrameCount === 1 ? "" : "s"} cannot be observed.`
+      : "")
+  );
+}
+
 export function monitorSelectorText(el: Element): string {
   return formatSelector(findSelector(el));
 }
@@ -82,8 +92,7 @@ function start(): void {
   let pendingRecords: MutationRecord[] = [];
   let frameHandle: number | null = null;
   let entryCount = 0;
-  /** Roots we could not reach, surfaced in the panel so absence is not read as silence. */
-  const skipped: string[] = [];
+  let caveat: HTMLElement | null = null;
 
   /** Run a page edit the monitor makes on purpose without observing it. */
   function withoutObserving(fn: () => void): void {
@@ -127,6 +136,13 @@ function start(): void {
 
   document.body.appendChild(host);
 
+  function updateCaveat(): void {
+    const text = monitorCaveatText(skippedFrames.size);
+    if (caveat !== null) caveat.textContent = text;
+    // The closed panel is intentionally not page-queryable; mirror its user-facing status on our owned host.
+    host.setAttribute("data-a11y-playpen-monitor-caveat", text);
+  }
+
   // -------------------------------------------------------------------------
   // Observation
   // -------------------------------------------------------------------------
@@ -157,7 +173,7 @@ function start(): void {
   function recordSkippedFrame(frame: HTMLIFrameElement): void {
     if (skippedFrames.has(frame)) return;
     skippedFrames.add(frame);
-    skipped.push("cross-origin iframe");
+    updateCaveat();
   }
 
   function observeFrame(frame: HTMLIFrameElement): void {
@@ -569,12 +585,9 @@ function start(): void {
       button("Close", close),
     );
 
-    const caveat = document.createElement("div");
+    caveat = document.createElement("div");
     caveat.className = "alm-caveat";
-    caveat.textContent =
-      "Messages are an approximation; real screen readers differ. Closed shadow roots" +
-      (skipped.length > 0 ? " and cross-origin iframes" : "") +
-      " cannot be observed.";
+    updateCaveat();
     header.appendChild(caveat);
     return header;
   }
