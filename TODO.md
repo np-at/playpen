@@ -159,7 +159,7 @@ These tasks establish the contracts required by all later work.
 
 - [ ] Replace fragment navigation and `location.assign()` with `el.focus({preventScroll: true})`.
 - [ ] Wait for an animation frame, verify `document.activeElement === el`, and only then collect focused styles.
-- [ ] Preserve and restore the original active element, scroll position, URL/hash/history, and any temporary attributes.
+- [ ] Preserve and restore the original active element, scroll position, URL/hash, reliably comparable history state, and any temporary attributes; report that arbitrary `History.state` structured-clone representations cannot be guaranteed fully restorable.
 - [ ] Do not add permanent IDs to tested elements.
 - [ ] Replace the incomplete selector with tested focusability logic covering native controls, links, summary, editable content,
   media controls, and programmatically focusable elements while excluding disabled/inert/hidden candidates.

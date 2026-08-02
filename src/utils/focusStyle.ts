@@ -488,7 +488,7 @@ export function writeFocusStyleReport(report: FocusStyleReport): void {
   }
   if (report.historyMutations.length > 0) {
     console.error(
-      "Focus Style Check: page focus handlers changed history; URL and state were restored, but browser history entries cannot be safely removed",
+      "Focus Style Check: page focus handlers changed history; current URL and reliably comparable state were restored. Arbitrary History.state structured-clone representations cannot be guaranteed fully restorable, and pushed entries cannot be safely erased.",
       report.historyMutations,
     );
   }
