@@ -24,9 +24,8 @@ import {
   type Announcement,
   type LiveContext,
 } from "../utils/ariaLive.ts";
-import { findSelector, formatSelector } from "../utils/finder.ts";
+import { collectSelectorRoots, findSelector, formatSelector } from "../utils/finder.ts";
 import { isElRendered } from "../utils/isElRendered.ts";
-import { applyToShadows } from "../utils/applyToShadows.ts";
 
 const HOST_ID = "aria-live-monitor-host";
 const MAX_ENTRIES = 200;
@@ -64,6 +63,8 @@ function start(): void {
   // -------------------------------------------------------------------------
 
   const observers: MutationObserver[] = [];
+  const observedRoots = new Set<Document | ShadowRoot>();
+  const skippedFrames = new Set<HTMLIFrameElement>();
   const listeners = new AbortController();
   /** Text of each region as of the end of the last batch — the next "before". */
   const textSnapshots = new WeakMap<Element, string>();
@@ -131,7 +132,9 @@ function start(): void {
   // -------------------------------------------------------------------------
 
   function observeRoot(root: Document | ShadowRoot): void {
-    const target = root instanceof Document ? root.documentElement : root;
+    if (observedRoots.has(root)) return;
+    observedRoots.add(root);
+    const target = root.nodeType === Node.DOCUMENT_NODE ? (root as Document).documentElement : root;
     const observer = new MutationObserver(onMutations);
     observer.observe(target, {
       subtree: true,
@@ -143,6 +146,7 @@ function start(): void {
     });
     observers.push(observer);
     for (const region of Array.from(root.querySelectorAll(LIVE_SELECTOR))) seedSnapshot(region);
+    for (const frame of Array.from(root.querySelectorAll("iframe"))) observeFrame(frame);
   }
 
   function seedSnapshot(region: Element): void {
@@ -150,26 +154,34 @@ function start(): void {
     htmlSnapshots.set(region, region.innerHTML);
   }
 
-  function attachToDocument(doc: Document): void {
-    observeRoot(doc);
-    applyToShadows(doc, (root) => {
-      observeRoot(root);
-    });
-    for (const frame of Array.from(doc.querySelectorAll("iframe"))) {
-      // Cross-origin access throws; there is nothing to monitor in that case.
-      const inner = ((): Document | null => {
-        try {
-          return frame.contentDocument;
-        } catch {
-          return null;
-        }
-      })();
-      if (inner) attachToDocument(inner);
-      else skipped.push("cross-origin iframe");
-    }
+  function recordSkippedFrame(frame: HTMLIFrameElement): void {
+    if (skippedFrames.has(frame)) return;
+    skippedFrames.add(frame);
+    skipped.push("cross-origin iframe");
   }
 
-  attachToDocument(document);
+  function observeFrame(frame: HTMLIFrameElement): void {
+    const observeLoadedDocument = (): void => {
+      try {
+        const frameDocument = frame.contentDocument;
+        if (frameDocument) observeSnapshot(frameDocument);
+        else recordSkippedFrame(frame);
+      } catch {
+        recordSkippedFrame(frame);
+      }
+    };
+    observeLoadedDocument();
+    frame.addEventListener("load", observeLoadedDocument, { signal: listeners.signal });
+  }
+
+  function observeSnapshot(root: Document | ShadowRoot): void {
+    // A scan is a snapshot; mutation handling below starts a new scan for roots attached later.
+    const snapshot = collectSelectorRoots(root);
+    for (const visitedRoot of snapshot.visited) observeRoot(visitedRoot);
+    for (const skippedRoot of snapshot.skipped) recordSkippedFrame(skippedRoot.frame);
+  }
+
+  observeSnapshot(document);
   // Built after the scan so the caveat can mention what could not be reached.
   panel.append(makeHeader(), freezeBar, list);
 
@@ -214,21 +226,19 @@ function start(): void {
     for (const record of records) {
       if (record.type === "childList") {
         for (const added of Array.from(record.addedNodes)) {
-          if (!(added instanceof Element)) continue;
+          if (added.nodeType !== Node.ELEMENT_NODE) continue;
+          const addedElement = added as Element;
           // A region can arrive with the insertion rather than be mutated in
           // place — the `role="alert"` toast pattern. Its owner is the new
           // subtree, not the ancestor the record points at.
-          for (const candidate of [added, ...Array.from(added.querySelectorAll(LIVE_SELECTOR))]) {
+          for (const candidate of [addedElement, ...Array.from(addedElement.querySelectorAll(LIVE_SELECTOR))]) {
             const ctx = resolveLiveRegion(candidate);
-            if (ctx && added.contains(ctx.region)) add(ctx, null, true);
+            if (ctx && addedElement.contains(ctx.region)) add(ctx, null, true);
           }
-          // Newly attached shadow roots need their own observer.
-          for (const el of [added, ...Array.from(added.querySelectorAll("*"))]) {
-            if (!el.shadowRoot) continue;
-            observeRoot(el.shadowRoot);
-            applyToShadows(el.shadowRoot, (root) => {
-              observeRoot(root);
-            });
+          // Newly attached open roots and same-origin frames receive their own observers.
+          for (const element of [addedElement, ...Array.from(addedElement.querySelectorAll("*"))]) {
+            if (element.shadowRoot) observeSnapshot(element.shadowRoot);
+            if (element.localName === "iframe") observeFrame(element as HTMLIFrameElement);
           }
         }
       }
@@ -264,9 +274,8 @@ function start(): void {
   }
 
   function isRendered(region: Element): boolean {
-    if (!(region instanceof HTMLElement)) return true;
     try {
-      return isElRendered(region);
+      return isElRendered(region as HTMLElement);
     } catch {
       return true;
     }

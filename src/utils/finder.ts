@@ -27,9 +27,22 @@ let rootDocument: Document | Element | ShadowRoot;
 
 export type SelectorRoot = Document | ShadowRoot;
 
+export interface SkippedSelectorRoot {
+  reason: "cross-origin-iframe";
+  frame: HTMLIFrameElement;
+}
+
+/**
+ * A synchronous snapshot of roots reachable from a document or open shadow root.
+ * Roots added after this function returns require a new scan.
+ */
 export interface SelectorRootCollection {
+  visited: SelectorRoot[];
+  skipped: SkippedSelectorRoot[];
+  /** @deprecated Use `visited`. Kept for bookmarklets already using Task 1's API. */
   supported: SelectorRoot[];
-  unsupported: Array<{ reason: "cross-origin-iframe"; frame: HTMLIFrameElement }>;
+  /** @deprecated Use `skipped`. Kept for bookmarklets already using Task 1's API. */
+  unsupported: SkippedSelectorRoot[];
 }
 
 export type SelectorResult =
@@ -53,32 +66,32 @@ export function findSelector(input: Element): SelectorResult {
   return { supported: false, reason: "unsupported-root" };
 }
 
-/** Walks every document and open shadow root reachable without crossing origin boundaries. */
-export function collectSelectorRoots(documentRoot: Document): SelectorRootCollection {
-  const supported: SelectorRoot[] = [];
-  const unsupported: SelectorRootCollection["unsupported"] = [];
+/** Walks every reachable document and open shadow root without crossing origin boundaries. */
+export function collectSelectorRoots(root: SelectorRoot): SelectorRootCollection {
+  const visitedRoots: SelectorRoot[] = [];
+  const skippedRoots: SkippedSelectorRoot[] = [];
   const visited = new Set<SelectorRoot>();
 
-  function visit(root: SelectorRoot): void {
-    if (visited.has(root)) return;
-    visited.add(root);
-    supported.push(root);
+  function visit(currentRoot: SelectorRoot): void {
+    if (visited.has(currentRoot)) return;
+    visited.add(currentRoot);
+    visitedRoots.push(currentRoot);
 
-    for (const element of Array.from(root.querySelectorAll("*"))) {
+    for (const element of Array.from(currentRoot.querySelectorAll("*"))) {
       if (element.shadowRoot) visit(element.shadowRoot);
       if (element.localName !== "iframe") continue;
       try {
         const frame = element as HTMLIFrameElement;
         if (frame.contentDocument) visit(frame.contentDocument);
-        else unsupported.push({ reason: "cross-origin-iframe", frame });
+        else skippedRoots.push({ reason: "cross-origin-iframe", frame });
       } catch {
-        unsupported.push({ reason: "cross-origin-iframe", frame: element as HTMLIFrameElement });
+        skippedRoots.push({ reason: "cross-origin-iframe", frame: element as HTMLIFrameElement });
       }
     }
   }
 
-  visit(documentRoot);
-  return { supported, unsupported };
+  visit(root);
+  return { visited: visitedRoots, skipped: skippedRoots, supported: visitedRoots, unsupported: skippedRoots };
 }
 
 /** Formats a selector with every document/shadow boundary needed to resolve it. */

@@ -1,28 +1,13 @@
-export function digIntoIframes(root: Document | ShadowRoot, fxn: (arg0: Document) => void): void {
-  for (const el of Array.from(root.querySelectorAll("iframe"))) {
-    if (el.contentDocument) {
-      fxn(el.contentDocument);
-      digIntoIframes(el.contentDocument, fxn);
-    } else {
-      fetch(el.src, {
-        mode: "no-cors",
-      })
-        .then((response) => {
-          response
-            .text()
-            .then((text) => {
-              const parser = new DOMParser();
-              const doc = parser.parseFromString(text, "text/html");
-              fxn(doc);
-              digIntoIframes(doc, fxn);
-            })
-            .catch((err: unknown) => {
-              console.error(err);
-            });
-        })
-        .catch((err: unknown) => {
-          console.error(err);
-        });
-    }
+import { collectSelectorRoots, type SelectorRootCollection } from "./finder.ts";
+
+/** Applies work to same-origin iframe documents in a synchronous traversal snapshot. */
+export function digIntoIframes(
+  root: Document | ShadowRoot,
+  fn: (root: Document) => void,
+): SelectorRootCollection {
+  const snapshot = collectSelectorRoots(root);
+  for (const visitedRoot of snapshot.visited) {
+    if (visitedRoot.nodeType === Node.DOCUMENT_NODE && visitedRoot !== root) fn(visitedRoot as Document);
   }
+  return snapshot;
 }
