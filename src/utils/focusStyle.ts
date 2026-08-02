@@ -197,11 +197,21 @@ type PageState = {
   focusVisible: boolean;
   historyLength: number;
   historyState: unknown;
+  observedHistoryLength: number;
+  observedHistoryState: string | undefined;
   scrollX: number;
   scrollY: number;
   url: string;
   view: Window;
 };
+
+function serializeHistoryState(state: unknown): string | undefined {
+  try {
+    return JSON.stringify(state);
+  } catch {
+    return undefined;
+  }
+}
 
 function capturePageState(documentRoot: Document): PageState | null {
   const view = documentRoot.defaultView;
@@ -212,6 +222,8 @@ function capturePageState(documentRoot: Document): PageState | null {
     focusVisible: activeElement?.matches(":focus-visible") ?? false,
     historyLength: view.history.length,
     historyState: view.history.state as unknown,
+    observedHistoryLength: view.history.length,
+    observedHistoryState: serializeHistoryState(view.history.state),
     scrollX: view.scrollX,
     scrollY: view.scrollY,
     url: view.location.href,
@@ -258,8 +270,8 @@ async function restorePageState(documentRoot: Document, state: PageState): Promi
 function historyChanged(state: PageState): boolean {
   return (
     state.view.location.href !== state.url ||
-    state.view.history.length !== state.historyLength ||
-    !Object.is(state.view.history.state, state.historyState)
+    state.view.history.length !== state.observedHistoryLength ||
+    serializeHistoryState(state.view.history.state) !== state.observedHistoryState
   );
 }
 
@@ -273,6 +285,8 @@ function restoreHistoryState(documentRoot: Document, state: PageState): FocusSty
     expectedUrl: state.url,
   };
   state.view.history.replaceState(state.historyState, "", state.url);
+  state.observedHistoryLength = state.view.history.length;
+  state.observedHistoryState = serializeHistoryState(state.view.history.state);
   return mutation;
 }
 
@@ -357,7 +371,10 @@ export async function runFocusStyleCheck(root: ParentNode): Promise<FocusStyleRe
         if (result.status === "style-difference") report.styleDifferences.push(result);
         else if (result.status === "no-visible-difference") report.noVisibleDifference.push(result.element);
         else report.couldNotFocus.push(result);
-        if (Array.from(states.values()).some(historyChanged)) return;
+        const state = states.get(element.ownerDocument);
+        if (state === undefined) continue;
+        const historyMutation = restoreHistoryState(element.ownerDocument, state);
+        if (historyMutation !== undefined) report.historyMutations.push(historyMutation);
       }
     }
   });

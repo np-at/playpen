@@ -322,6 +322,31 @@ describe("FocusStyleCheck page contract", () => {
     }
   });
 
+  it("continues inspecting later candidates after restoring a focus-handler history mutation", async () => {
+    addStyle(`
+      [data-later-candidate] { outline: 0 solid transparent; }
+      [data-later-candidate]:focus { outline: 5px solid rgb(40, 41, 42); }
+    `);
+    const root = fixture(`
+      <button data-history-mutator>History mutator</button>
+      <button data-later-candidate>Later candidate</button>
+    `);
+    const mutator = required(root, "[data-history-mutator]");
+    const later = required(root, "[data-later-candidate]");
+    history.replaceState({ original: true }, "", "#focus-style-continue-original");
+    const beforeUrl = location.href;
+    mutator.addEventListener("focus", () => {
+      history.pushState({ mutated: true }, "", "#focus-style-continue-mutated");
+    });
+
+    const report = await runFocusStyleCheck(root);
+
+    expect(report.styleDifferences).toContainEqual(expect.objectContaining({ element: later }));
+    expect(report.historyMutations).toEqual([expect.objectContaining({ document, expectedUrl: beforeUrl })]);
+    expect(location.href).toBe(beforeUrl);
+    expect(history.state).toEqual({ original: true });
+  });
+
   it("inspects candidates in open shadow roots and nested same-origin frames", async () => {
     const outerFrame = document.createElement("iframe");
     outerFrame.dataset.focusStyleFixture = "";
