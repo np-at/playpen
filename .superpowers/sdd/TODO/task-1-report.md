@@ -147,3 +147,39 @@ pnpm test
 ```
 
 Result: focused suite passed with 3 files and 18 tests; TypeScript and Vite build passed; full suite passed with 13 files and 85 tests.
+
+## Review round 3 follow-up
+
+### Changes
+
+- Added MonitorAriaLive's exported `monitorSelectorText()` consumer boundary and used it for rendered selector text.
+- Added browser coverage for a MonitorAriaLive live region in an open shadow root.
+- Removed the write-only `selectorContexts` weak map.
+
+### TDD evidence
+
+RED command:
+
+```text
+pnpm test src/_bookmarklets/MonitorAriaLive.test.ts
+```
+
+Result: failed as expected because `monitorSelectorText` was not exported.
+
+GREEN command:
+
+```text
+pnpm test src/_bookmarklets/MonitorAriaLive.test.ts
+```
+
+Result: 1 test file passed, 1 test passed. The assertion checks the required root context, without coupling the test to finder’s valid choice of tag versus attribute selector.
+
+### Validation
+
+```text
+pnpm test src/utils/finder.test.ts src/_bookmarklets/Pathify.test.ts src/_bookmarklets/MonitorAriaLive.test.ts
+pnpm build
+pnpm test
+```
+
+Result: focused suite passed with 3 files and 17 tests; TypeScript and Vite build passed; full suite passed with 14 files and 86 tests.

@@ -24,12 +24,16 @@ import {
   type Announcement,
   type LiveContext,
 } from "../utils/ariaLive.ts";
-import { findSelector, formatSelector, type SelectorResult } from "../utils/finder.ts";
+import { findSelector, formatSelector } from "../utils/finder.ts";
 import { isElRendered } from "../utils/isElRendered.ts";
 import { applyToShadows } from "../utils/applyToShadows.ts";
 
 const HOST_ID = "aria-live-monitor-host";
 const MAX_ENTRIES = 200;
+
+export function monitorSelectorText(el: Element): string {
+  return formatSelector(findSelector(el));
+}
 
 /** Superset filter for "might be a live region"; ariaLive.ts makes the real call. */
 const LIVE_SELECTOR = '[aria-live],[role~="alert"],[role~="status"],[role~="log"],[role~="marquee"],[role~="timer"],output';
@@ -67,8 +71,6 @@ function start(): void {
   const htmlSnapshots = new WeakMap<Element, string>();
   /** Regions muted from the panel, with the attribute values to put back. */
   const muted = new Map<Element, string | null>();
-  /** Keeps the exact document or shadow root needed to resolve each displayed selector. */
-  const selectorContexts = new WeakMap<HTMLElement, SelectorResult>();
 
   let capturing = true;
   let pauseOnAnnounce = false;
@@ -283,9 +285,7 @@ function start(): void {
 
     const head = document.createElement("div");
     head.className = "alm-entry-head";
-    const selector = selectorFor(ctx.region);
-    const selectorSpan = span("alm-sel", selectorText(selector));
-    selectorContexts.set(selectorSpan, selector);
+    const selectorSpan = span("alm-sel", monitorSelectorText(ctx.region));
     head.append(
       span("alm-time", new Date().toLocaleTimeString()),
       span("alm-badge", announcement.politeness),
@@ -337,14 +337,6 @@ function start(): void {
     }
 
     if (pauseOnAnnounce && suppressed === null) freeze();
-  }
-
-  function selectorFor(el: Element): SelectorResult {
-    return findSelector(el);
-  }
-
-  function selectorText(result: SelectorResult): string {
-    return formatSelector(result);
   }
 
   /** Before/after with the changed span marked, via common prefix and suffix. */
