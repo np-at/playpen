@@ -101,3 +101,49 @@ pnpm test
 ```
 
 Result: focused suite passed with 2 files and 15 tests; TypeScript and Vite build passed; full suite passed with 12 files and 82 tests.
+
+## Review round 2 follow-up
+
+### Changes
+
+- Added shared `formatSelector()` output that prefixes each selector with a resolvable root context chain: `top-document`, iframe selector/document boundaries, and shadow-host boundaries.
+- Switched Pathify's input, human-readable export, and processed export to this root-aware format; switched MonitorAriaLive's visible selector text to the same contract.
+- Removed Pathify's unused `capturedTargets` snapshot collection.
+- Added a direct Pathify consumer test that exercises its exported root-aware output formatter.
+
+### TDD evidence
+
+RED command:
+
+```text
+pnpm test src/utils/finder.test.ts
+```
+
+Result: failed as expected because `formatSelector` was not exported.
+
+Second RED command:
+
+```text
+pnpm test src/_bookmarklets/Pathify.test.ts
+```
+
+Result: failed as expected because Pathify did not expose its selector-output contract.
+
+GREEN commands:
+
+```text
+pnpm test src/utils/finder.test.ts
+pnpm test src/_bookmarklets/Pathify.test.ts
+```
+
+Result: formatter coverage passed with 15 tests; the Pathify consumer test passed with 1 test.
+
+### Validation
+
+```text
+pnpm test src/utils/finder.test.ts src/utils/DOMPath.test.ts src/_bookmarklets/Pathify.test.ts
+pnpm build
+pnpm test
+```
+
+Result: focused suite passed with 3 files and 18 tests; TypeScript and Vite build passed; full suite passed with 13 files and 85 tests.

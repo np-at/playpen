@@ -81,6 +81,27 @@ export function collectSelectorRoots(documentRoot: Document): SelectorRootCollec
   return { supported, unsupported };
 }
 
+/** Formats a selector with every document/shadow boundary needed to resolve it. */
+export function formatSelector(result: SelectorResult): string {
+  if (!result.supported) return `[unsupported selector: ${result.reason}]`;
+  return `${formatSelectorRoot(result.root)} :: ${result.selector}`;
+}
+
+function formatSelectorRoot(root: SelectorRoot): string {
+  if (root.nodeType === Node.DOCUMENT_NODE) {
+    if (root === document) return "top-document";
+    const frame = (root as Document).defaultView?.frameElement;
+    if (!frame) return "top-document";
+    const frameSelector = findSelector(frame);
+    if (!frameSelector.supported) return "iframe-document";
+    return `${formatSelectorRoot(frameSelector.root)} > iframe(${frameSelector.selector}) > document`;
+  }
+
+  const hostSelector = findSelector((root as ShadowRoot).host);
+  if (!hostSelector.supported) return "shadow-root";
+  return `${formatSelectorRoot(hostSelector.root)} > shadow-root(${hostSelector.selector})`;
+}
+
 function selectorInRoot(input: Element, root: SelectorRoot, rootType: "document" | "shadow-root"): SelectorResult {
   try {
     const selector = finder(input, { root });

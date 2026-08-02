@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { collectSelectorRoots, findSelector } from "./finder.ts";
+import { collectSelectorRoots, findSelector, formatSelector } from "./finder.ts";
 
 const fixtures: Element[] = [];
 
@@ -133,5 +133,25 @@ describe("findSelector", () => {
     const roots = collectSelectorRoots(document);
 
     expect(roots.supported).toContain(nestedDocument);
+  });
+
+  it("formats a shadow-root selector with the host context consumers need to resolve it", () => {
+    const host = fixture("<div id=host></div>").firstElementChild!;
+    const shadow = host.attachShadow({ mode: "open" });
+    shadow.innerHTML = "<button>Save</button>";
+
+    const result = findSelector(shadow.querySelector("button")!);
+
+    expect(formatSelector(result)).toContain("top-document > shadow-root(#host) :: button");
+  });
+
+  it("formats an iframe selector with its document boundary", () => {
+    const frame = fixture('<iframe id="frame"></iframe>').querySelector("iframe")!;
+    const frameDocument = frame.contentDocument!;
+    frameDocument.body.innerHTML = '<button id="frame-button">Save</button>';
+
+    const result = findSelector(frameDocument.querySelector("button")!);
+
+    expect(formatSelector(result)).toContain("top-document > iframe(#frame) > document :: #frame-button");
   });
 });

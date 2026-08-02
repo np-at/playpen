@@ -1,4 +1,4 @@
-import { collectSelectorRoots, findSelector, type SelectorResult } from "../utils/finder";
+import { collectSelectorRoots, findSelector, formatSelector, type SelectorResult } from "../utils/finder";
 
 let hidePanels = false;
 let targetAndSourceCompilationReadable = "";
@@ -7,8 +7,8 @@ function getXpath(el: Element): SelectorResult {
   return findSelector(el);
 }
 
-function selectorText(result: SelectorResult): string {
-  return result.supported ? result.selector : `[unsupported selector: ${result.reason}]`;
+export function pathifySelectorText(result: SelectorResult): string {
+  return formatSelector(result);
   // let currentEl = el;
   // let currentElTagName = el.tagName.toLowerCase();
   // let parentEl: HTMLElement;
@@ -64,7 +64,6 @@ function getXpathAndSource(): void {
   let outputPanelForARC_input_label: HTMLLabelElement;
   let outputPanelForARC_closeButton: HTMLButtonElement;
   let outputPanelForARCAdded = false;
-  const capturedTargets: Array<{ selector: SelectorResult; markup: string }> = [];
 
   if (!document.querySelector("#tempDOMDumpingGround")) {
     const tempDOMDumpingGroundNew = document.createElement("div");
@@ -247,7 +246,7 @@ function getXpathAndSource(): void {
     buildMarkdownFileOutput();
     unhighlightElement(el);
     const selector = getXpath(el);
-    outputPanelForARC_input.value = selectorText(selector);
+    outputPanelForARC_input.value = pathifySelectorText(selector);
     let markup = getNodeHTML(el).replace(' class=""', "");
 
     const markupSplit = markup.split("\n");
@@ -261,8 +260,7 @@ function getXpathAndSource(): void {
     // outputPanelForARC_textarea.value = indented;
     outputPanelForARC_textarea.value = markup;
 
-    capturedTargets.push({ selector, markup });
-    const selectorLabel = selectorText(selector);
+    const selectorLabel = pathifySelectorText(selector);
     targetAndSourceCompilationReadable +=
       selectorLabel + "\n" + markup + "🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸 END target and source markup 🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸\n";
     targetAndSourceCompilationProcessed += selectorLabel + "~~~//~~~" + flatten(markup) + "\n";
@@ -306,7 +304,7 @@ function getXpathAndSource(): void {
         e.stopPropagation();
         e.preventDefault();
         getNodeDetails(el);
-        infoPanel.innerHTML = "Values captured for " + selectorText(getXpath(el));
+        infoPanel.innerHTML = "Values captured for " + pathifySelectorText(getXpath(el));
       }
     });
     el.addEventListener("focus", (e) => {
@@ -347,7 +345,7 @@ function getXpathAndSource(): void {
   function updateInfoPanel(el: Element): void {
     // console.clear();
     // console.log(getXpath(el));
-    infoPanel.innerHTML = selectorText(getXpath(el));
+    infoPanel.innerHTML = pathifySelectorText(getXpath(el));
   }
 
   function checkKeyPresses(): void {

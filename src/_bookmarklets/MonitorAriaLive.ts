@@ -24,7 +24,7 @@ import {
   type Announcement,
   type LiveContext,
 } from "../utils/ariaLive.ts";
-import { findSelector, type SelectorResult } from "../utils/finder.ts";
+import { findSelector, formatSelector, type SelectorResult } from "../utils/finder.ts";
 import { isElRendered } from "../utils/isElRendered.ts";
 import { applyToShadows } from "../utils/applyToShadows.ts";
 
@@ -344,7 +344,7 @@ function start(): void {
   }
 
   function selectorText(result: SelectorResult): string {
-    return result.supported ? result.selector : `[unsupported selector: ${result.reason}]`;
+    return formatSelector(result);
   }
 
   /** Before/after with the changed span marked, via common prefix and suffix. */
