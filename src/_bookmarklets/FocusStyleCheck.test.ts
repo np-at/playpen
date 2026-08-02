@@ -347,6 +347,53 @@ describe("FocusStyleCheck page contract", () => {
     expect(history.state).toEqual({ original: true });
   });
 
+  it("detects and restores a same-URL replaceState mutation with Map history state", async () => {
+    const root = fixture("<button data-map-history-mutator>Map history mutator</button>");
+    const target = required(root, "[data-map-history-mutator]");
+    const originalState = new Map([["original", Number.NaN]]);
+    history.replaceState(originalState, "", "#focus-style-map-original");
+    const beforeUrl = location.href;
+    target.addEventListener("focus", () => {
+      history.replaceState(new Map([["mutated", Number.NaN]]), "", beforeUrl);
+    });
+
+    const report = await runFocusStyleCheck(root);
+
+    expect(history.state).toEqual(originalState);
+    expect(report.historyMutations).toEqual([expect.objectContaining({ document, expectedUrl: beforeUrl })]);
+  });
+
+  it("restores another visited document's history before inspecting its later candidate", async () => {
+    const outerFrame = document.createElement("iframe");
+    outerFrame.dataset.focusStyleFixture = "";
+    document.body.appendChild(outerFrame);
+    fixtures.push(outerFrame);
+    const outerDocument = outerFrame.contentDocument;
+    if (outerDocument === null) throw new Error("outer iframe document was not created");
+    outerDocument.body.innerHTML = "<button data-outer-history-mutator>Outer history mutator</button><iframe></iframe>";
+    const mutator = required(outerDocument, "[data-outer-history-mutator]");
+    const innerFrame = required(outerDocument, "iframe") as HTMLIFrameElement;
+    const innerDocument = innerFrame.contentDocument;
+    if (innerDocument === null) throw new Error("inner iframe document was not created");
+    innerDocument.body.innerHTML = "<button data-inner-candidate>Inner candidate</button>";
+    const innerCandidate = required(innerDocument, "[data-inner-candidate]");
+    innerDocument.defaultView?.history.replaceState({ original: true }, "");
+    const beforeUrl = innerDocument.location.href;
+    let observedStateDuringInnerFocus: unknown;
+    mutator.addEventListener("focus", () => {
+      innerDocument.defaultView?.history.pushState({ mutated: true }, "");
+    });
+    innerCandidate.addEventListener("focus", () => {
+      observedStateDuringInnerFocus = innerDocument.defaultView?.history.state;
+    });
+
+    const report = await runFocusStyleCheck(outerDocument);
+
+    expect(observedStateDuringInnerFocus).toEqual({ original: true });
+    expect(innerDocument.location.href).toBe(beforeUrl);
+    expect(report.historyMutations).toEqual([expect.objectContaining({ document: innerDocument, expectedUrl: beforeUrl })]);
+  });
+
   it("inspects candidates in open shadow roots and nested same-origin frames", async () => {
     const outerFrame = document.createElement("iframe");
     outerFrame.dataset.focusStyleFixture = "";

@@ -198,19 +198,74 @@ type PageState = {
   historyLength: number;
   historyState: unknown;
   observedHistoryLength: number;
-  observedHistoryState: string | undefined;
+  observedHistoryState: unknown;
   scrollX: number;
   scrollY: number;
   url: string;
   view: Window;
 };
 
-function serializeHistoryState(state: unknown): string | undefined {
-  try {
-    return JSON.stringify(state);
-  } catch {
-    return undefined;
+function structuredCloneEquals(
+  left: unknown,
+  right: unknown,
+  paired: Map<object, object> = new Map(),
+  reversePaired: Map<object, object> = new Map(),
+): boolean {
+  if (Object.is(left, right)) return true;
+  if (typeof left !== "object" || left === null || typeof right !== "object" || right === null) return false;
+  if (paired.has(left)) return paired.get(left) === right;
+  if (reversePaired.has(right)) return reversePaired.get(right) === left;
+  paired.set(left, right);
+  reversePaired.set(right, left);
+
+  const leftTag = Object.prototype.toString.call(left);
+  if (leftTag !== Object.prototype.toString.call(right)) return false;
+  if (leftTag === "[object Date]") return Date.prototype.getTime.call(left) === Date.prototype.getTime.call(right);
+  if (leftTag === "[object RegExp]") {
+    const leftExpression = left as RegExp;
+    const rightExpression = right as RegExp;
+    return leftExpression.source === rightExpression.source && leftExpression.flags === rightExpression.flags;
   }
+  if (leftTag === "[object Map]") {
+    const leftEntries = Array.from((left as Map<unknown, unknown>).entries());
+    const rightEntries = Array.from((right as Map<unknown, unknown>).entries());
+    if (leftEntries.length !== rightEntries.length) return false;
+    return leftEntries.every(([leftKey, leftValue], index) => {
+      const rightEntry = rightEntries[index];
+      return (
+        structuredCloneEquals(leftKey, rightEntry[0], paired, reversePaired) &&
+        structuredCloneEquals(leftValue, rightEntry[1], paired, reversePaired)
+      );
+    });
+  }
+  if (leftTag === "[object Set]") {
+    const leftValues = Array.from((left as Set<unknown>).values());
+    const rightValues = Array.from((right as Set<unknown>).values());
+    if (leftValues.length !== rightValues.length) return false;
+    return leftValues.every((leftValue, index) => structuredCloneEquals(leftValue, rightValues[index], paired, reversePaired));
+  }
+  if (ArrayBuffer.isView(left) && ArrayBuffer.isView(right)) {
+    return (
+      left.byteLength === right.byteLength &&
+      Array.from(new Uint8Array(left.buffer, left.byteOffset, left.byteLength)).every(
+        (value, index) => value === new Uint8Array(right.buffer, right.byteOffset, right.byteLength)[index],
+      )
+    );
+  }
+  if (leftTag === "[object ArrayBuffer]") {
+    const leftBytes = new Uint8Array(left as ArrayBuffer);
+    const rightBytes = new Uint8Array(right as ArrayBuffer);
+    return leftBytes.length === rightBytes.length && leftBytes.every((value, index) => value === rightBytes[index]);
+  }
+
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+  return (
+    leftKeys.length === rightKeys.length &&
+    leftKeys.every(
+      (key) => Object.hasOwn(right, key) && structuredCloneEquals(left[key as never], right[key as never], paired, reversePaired),
+    )
+  );
 }
 
 function capturePageState(documentRoot: Document): PageState | null {
@@ -223,7 +278,7 @@ function capturePageState(documentRoot: Document): PageState | null {
     historyLength: view.history.length,
     historyState: view.history.state as unknown,
     observedHistoryLength: view.history.length,
-    observedHistoryState: serializeHistoryState(view.history.state),
+    observedHistoryState: view.history.state as unknown,
     scrollX: view.scrollX,
     scrollY: view.scrollY,
     url: view.location.href,
@@ -271,7 +326,7 @@ function historyChanged(state: PageState): boolean {
   return (
     state.view.location.href !== state.url ||
     state.view.history.length !== state.observedHistoryLength ||
-    serializeHistoryState(state.view.history.state) !== state.observedHistoryState
+    !structuredCloneEquals(state.view.history.state, state.observedHistoryState)
   );
 }
 
@@ -286,7 +341,7 @@ function restoreHistoryState(documentRoot: Document, state: PageState): FocusSty
   };
   state.view.history.replaceState(state.historyState, "", state.url);
   state.observedHistoryLength = state.view.history.length;
-  state.observedHistoryState = serializeHistoryState(state.view.history.state);
+  state.observedHistoryState = state.view.history.state as unknown;
   return mutation;
 }
 
@@ -371,10 +426,10 @@ export async function runFocusStyleCheck(root: ParentNode): Promise<FocusStyleRe
         if (result.status === "style-difference") report.styleDifferences.push(result);
         else if (result.status === "no-visible-difference") report.noVisibleDifference.push(result.element);
         else report.couldNotFocus.push(result);
-        const state = states.get(element.ownerDocument);
-        if (state === undefined) continue;
-        const historyMutation = restoreHistoryState(element.ownerDocument, state);
-        if (historyMutation !== undefined) report.historyMutations.push(historyMutation);
+        for (const [documentRoot, state] of states) {
+          const historyMutation = restoreHistoryState(documentRoot, state);
+          if (historyMutation !== undefined) report.historyMutations.push(historyMutation);
+        }
       }
     }
   });
