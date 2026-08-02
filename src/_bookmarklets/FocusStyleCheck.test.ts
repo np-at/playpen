@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 import { findFocusCandidates, inspectFocusStyle, runFocusStyleCheck, writeFocusStyleReport } from "../utils/focusStyle.ts";
 import { createBookmarkletHarness, type BookmarkletHarness } from "./bookmarkletTestHarness.ts";
 
@@ -20,7 +21,10 @@ function fixture(markup: string): HTMLElement {
 
 function required(root: ParentNode, selector: string): HTMLElement {
   const element = root.querySelector(selector);
-  if (!(element instanceof HTMLElement)) throw new Error(`no HTMLElement matched ${selector}`);
+  const view = element?.ownerDocument.defaultView;
+  if (element === null || view === null || view === undefined || !(element instanceof view.HTMLElement)) {
+    throw new Error(`no HTMLElement matched ${selector}`);
+  }
   return element;
 }
 
@@ -117,7 +121,16 @@ describe("FocusStyleCheck focus inspection", () => {
       [data-focus-visible-rule] { outline: 0 solid transparent; }
       [data-focus-visible-rule]:focus-visible { outline: 6px solid rgb(4, 5, 6); }
     `);
-    const target = required(fixture("<input data-focus-visible-rule>"), "input");
+    const root = fixture(`
+      <button data-pointer-source>Pointer source</button>
+      <button data-focus-visible-rule>Focus-visible target</button>
+    `);
+    const pointerSource = required(root, "[data-pointer-source]");
+    const target = required(root, "[data-focus-visible-rule]");
+    await userEvent.click(pointerSource);
+    target.focus({ preventScroll: true });
+    expect(target.matches(":focus-visible")).toBe(false);
+    target.blur();
 
     const result = await inspectFocusStyle(target);
 
@@ -180,6 +193,47 @@ describe("FocusStyleCheck focus inspection", () => {
 });
 
 describe("FocusStyleCheck page contract", () => {
+  it("inspects candidates in open shadow roots and nested same-origin frames", async () => {
+    const outerFrame = document.createElement("iframe");
+    outerFrame.dataset.focusStyleFixture = "";
+    document.body.appendChild(outerFrame);
+    fixtures.push(outerFrame);
+    const outerDocument = outerFrame.contentDocument;
+    if (outerDocument === null) throw new Error("outer iframe document was not created");
+
+    const host = outerDocument.createElement("div");
+    outerDocument.body.appendChild(host);
+    const shadowRoot = host.attachShadow({ mode: "open" });
+    shadowRoot.innerHTML = `
+      <style>
+        button { outline: 0 solid transparent; }
+        button:focus { outline-width: 7px; }
+      </style>
+      <button data-shadow-focus>Shadow focus</button>
+    `;
+    const shadowTarget = required(shadowRoot, "[data-shadow-focus]");
+
+    const innerFrame = outerDocument.createElement("iframe");
+    outerDocument.body.appendChild(innerFrame);
+    const innerDocument = innerFrame.contentDocument;
+    if (innerDocument === null) throw new Error("inner iframe document was not created");
+    innerDocument.body.innerHTML = `
+      <style>
+        button { outline: 0 solid transparent; }
+        button:focus { outline-width: 8px; }
+      </style>
+      <button data-frame-focus>Frame focus</button>
+    `;
+    const frameTarget = required(innerDocument, "[data-frame-focus]");
+
+    const report = await runFocusStyleCheck(outerDocument);
+
+    expect(report.styleDifferences.map(({ element }) => element)).toEqual(expect.arrayContaining([shadowTarget, frameTarget]));
+    expect(report.couldNotFocus.map(({ element }) => element)).not.toEqual(expect.arrayContaining([shadowTarget, frameTarget]));
+    expect(outerDocument.activeElement).toBe(outerDocument.body);
+    expect(innerDocument.activeElement).toBe(innerDocument.body);
+  });
+
   it("restores active element and scroll while preserving URL, history, and element attributes", async () => {
     addStyle(`[data-state-target], [data-state-peer] { outline: none; }`);
     const root = fixture(`

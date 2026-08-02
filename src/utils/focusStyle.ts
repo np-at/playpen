@@ -1,4 +1,5 @@
 import { isElAriaHidden, isElRendered, renderedParent } from "./isElRendered.ts";
+import { collectSelectorRoots, type SelectorRoot } from "./finder.ts";
 
 export type FocusStyleDifference = {
   target: "element" | "::before" | "::after";
@@ -104,9 +105,20 @@ function nextAnimationFrame(view: Window): Promise<void> {
   });
 }
 
+function isHtmlElement(element: Element): element is HTMLElement {
+  const view = element.ownerDocument.defaultView;
+  return view !== null && element instanceof view.HTMLElement;
+}
+
 function isHtmlOrSvgElement(element: Element): element is HTMLElement | SVGElement {
   const view = element.ownerDocument.defaultView;
   return view !== null && (element instanceof view.HTMLElement || element instanceof view.SVGElement);
+}
+
+function activeElementFor(element: Element): Element | null {
+  const root = element.getRootNode();
+  if (root.nodeType === Node.DOCUMENT_FRAGMENT_NODE && "host" in root) return (root as ShadowRoot).activeElement;
+  return element.ownerDocument.activeElement;
 }
 
 function isIFrameElement(element: Element): element is HTMLIFrameElement {
@@ -138,35 +150,64 @@ function deepestActiveElement(documentRoot: Document): Element | null {
   return null;
 }
 
-function focusWithoutScrolling(element: Element): void {
-  if (isHtmlOrSvgElement(element)) element.focus({ preventScroll: true });
+function focusWithoutScrolling(element: Element, focusVisible?: boolean): void {
+  if (isHtmlOrSvgElement(element)) element.focus({ focusVisible, preventScroll: true });
 }
 
 function blur(element: Element | null): void {
   if (element !== null && isHtmlOrSvgElement(element)) element.blur();
 }
 
-async function withPageStateRestored<T>(documentRoot: Document, operation: () => Promise<T>): Promise<T> {
+type PageState = {
+  activeElement: Element | null;
+  focusVisible: boolean;
+  scrollX: number;
+  scrollY: number;
+  view: Window;
+};
+
+function capturePageState(documentRoot: Document): PageState | null {
   const view = documentRoot.defaultView;
-  if (view === null) return operation();
+  if (view === null) return null;
   const activeElement = deepestActiveElement(documentRoot);
-  const scrollX = view.scrollX;
-  const scrollY = view.scrollY;
-  const url = view.location.href;
-  const historyState = view.history.state as unknown;
+  return {
+    activeElement,
+    focusVisible: activeElement?.matches(":focus-visible") ?? false,
+    scrollX: view.scrollX,
+    scrollY: view.scrollY,
+    view,
+  };
+}
+
+function restorePageState(documentRoot: Document, state: PageState): void {
+  if (
+    state.activeElement === documentRoot.body ||
+    state.activeElement === documentRoot.documentElement ||
+    state.activeElement === null
+  ) {
+    blur(deepestActiveElement(documentRoot));
+    if (documentRoot.activeElement !== documentRoot.body && documentRoot.activeElement !== documentRoot.documentElement) {
+      blur(documentRoot.activeElement);
+    }
+  } else if (state.activeElement.isConnected) {
+    focusWithoutScrolling(state.activeElement, state.focusVisible);
+  }
+  state.view.scrollTo({ behavior: "instant", left: state.scrollX, top: state.scrollY });
+}
+
+async function withPageStatesRestored<T>(documents: Document[], operation: () => Promise<T>): Promise<T> {
+  const states = documents.flatMap((documentRoot) => {
+    const state = capturePageState(documentRoot);
+    return state === null ? [] : [{ documentRoot, state }];
+  });
 
   try {
     return await operation();
   } finally {
-    if (activeElement === documentRoot.body || activeElement === documentRoot.documentElement || activeElement === null) {
-      blur(deepestActiveElement(documentRoot));
-    } else if (activeElement.isConnected) {
-      focusWithoutScrolling(activeElement);
+    for (let index = states.length - 1; index >= 0; index -= 1) {
+      const entry = states[index];
+      restorePageState(entry.documentRoot, entry.state);
     }
-    if (view.location.href !== url || view.history.state !== historyState) {
-      view.history.replaceState(historyState, "", url);
-    }
-    view.scrollTo({ behavior: "instant", left: scrollX, top: scrollY });
   }
 }
 
@@ -178,7 +219,7 @@ function documentFor(root: ParentNode): Document {
 
 export function findFocusCandidates(root: ParentNode): HTMLElement[] {
   return Array.from(root.querySelectorAll(FOCUS_CANDIDATE_SELECTOR)).filter(
-    (element): element is HTMLElement => element instanceof HTMLElement && isEligibleFocusCandidate(element),
+    (element): element is HTMLElement => isHtmlElement(element) && isEligibleFocusCandidate(element),
   );
 }
 
@@ -187,15 +228,15 @@ export async function inspectFocusStyle(element: HTMLElement): Promise<FocusStyl
   const view = documentRoot.defaultView;
   if (view === null) return { status: "could-not-focus", element, reason: "no-window" };
 
-  if (documentRoot.activeElement === element) {
+  if (activeElementFor(element) === element) {
     element.blur();
     await nextAnimationFrame(view);
   }
   const unfocused = captureStyles(element);
 
-  element.focus({ preventScroll: true });
+  element.focus({ focusVisible: true, preventScroll: true });
   await nextAnimationFrame(view);
-  if (documentRoot.activeElement !== element) {
+  if (activeElementFor(element) !== element) {
     return { status: "could-not-focus", element, reason: "focus-was-not-retained" };
   }
 
@@ -207,12 +248,19 @@ export async function inspectFocusStyle(element: HTMLElement): Promise<FocusStyl
 
 export async function runFocusStyleCheck(root: ParentNode): Promise<FocusStyleReport> {
   const report: FocusStyleReport = { styleDifferences: [], noVisibleDifference: [], couldNotFocus: [] };
-  await withPageStateRestored(documentFor(root), async () => {
-    for (const element of findFocusCandidates(root)) {
-      const result = await inspectFocusStyle(element);
-      if (result.status === "style-difference") report.styleDifferences.push(result);
-      else if (result.status === "no-visible-difference") report.noVisibleDifference.push(result.element);
-      else report.couldNotFocus.push(result);
+  const roots: ParentNode[] =
+    root.nodeType === Node.DOCUMENT_NODE || (root.nodeType === Node.DOCUMENT_FRAGMENT_NODE && "host" in root)
+      ? collectSelectorRoots(root as SelectorRoot).visited
+      : [root];
+  const documents = Array.from(new Set(roots.map(documentFor)));
+  await withPageStatesRestored(documents, async () => {
+    for (const currentRoot of roots) {
+      for (const element of findFocusCandidates(currentRoot)) {
+        const result = await inspectFocusStyle(element);
+        if (result.status === "style-difference") report.styleDifferences.push(result);
+        else if (result.status === "no-visible-difference") report.noVisibleDifference.push(result.element);
+        else report.couldNotFocus.push(result);
+      }
     }
   });
   return report;
