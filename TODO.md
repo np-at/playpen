@@ -106,14 +106,14 @@ These tasks establish the contracts required by all later work.
 **Files:** `src/utils/finder.ts`, `src/utils/DOMPath.ts`, `src/_bookmarklets/Pathify.ts`,
 `src/_bookmarklets/MakeSkele.ts`, `src/_bookmarklets/MonitorAriaLive.ts`
 
-- [ ] Define one supported selector API that derives its query root from `input.getRootNode()` and returns both the selector and
+- [x] Define one supported selector API that derives its query root from `input.getRootNode()` and returns both the selector and
   its document/shadow-root context.
-- [ ] Verify every generated selector by asserting that querying the same root returns exactly the input element.
-- [ ] Support same-origin iframe documents and open shadow roots, or return an explicit structured unsupported result.
-- [ ] In `DOMPath.xPath`, escape IDs containing quotes and index text/comment nodes through `childNodes`, not `children`.
-- [ ] Remove Pathify's `findShortestUniqueClassCombination()` and broken fallback: it can return an ancestor selector and computes
+- [x] Verify every generated selector by asserting that querying the same root returns exactly the input element.
+- [x] Support same-origin iframe documents and open shadow roots, or return an explicit structured unsupported result.
+- [x] In `DOMPath.xPath`, escape IDs containing quotes and index text/comment nodes through `childNodes`, not `children`.
+- [x] Remove Pathify's `findShortestUniqueClassCombination()` and broken fallback: it can return an ancestor selector and computes
   `:nth-of-type()` one position too high.
-- [ ] Add tests for duplicate IDs, CSS-special characters, unique ancestor classes, first/middle/last siblings, SVG/MathML,
+- [x] Add tests for duplicate IDs, CSS-special characters, unique ancestor classes, first/middle/last siblings, SVG/MathML,
   shadow-root targets, iframe targets, and XPath IDs containing both quote styles.
 
 ### Repair document/shadow/iframe traversal
