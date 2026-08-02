@@ -1,4 +1,4 @@
-import { finder } from "../utils/finder";
+import { findSelector } from "../utils/finder";
 
 const nonSemanticTags = ["SCRIPT", "HEAD"];
 
@@ -71,8 +71,10 @@ interface NodeRep {
   childrenHash?: number;
   children: NodeRep[];
   sel?: string;
+  selectorRoot?: "document" | "shadow-root";
 }
 function makeNodeRep(el: LinkElement): NodeRep {
+  const selector = findSelector(el);
   const rep: NodeRep = {
     tag: el.tagName,
     hash: el.hash_data?.sum?.toString(16) ?? "none",
@@ -83,7 +85,8 @@ function makeNodeRep(el: LinkElement): NodeRep {
     attrHash: el.hash_data?.attrHash,
     childrenHash: el.hash_data?.childrenHash,
     textHash: el.hash_data?.textHash,
-    sel: finder(el),
+    sel: selector.supported ? selector.selector : undefined,
+    selectorRoot: selector.supported ? selector.rootType : undefined,
   };
   return rep;
 }

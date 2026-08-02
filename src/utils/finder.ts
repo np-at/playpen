@@ -11,7 +11,7 @@ interface Knot {
 type Path = Knot[];
 
 export interface FinderOptions {
-  root: Element;
+  root: Element | Document | ShadowRoot;
   idName: (name: string) => boolean;
   className: (name: string) => boolean;
   tagName: (name: string) => boolean;
@@ -23,7 +23,41 @@ export interface FinderOptions {
 }
 
 let config: FinderOptions;
-let rootDocument: Document | Element;
+let rootDocument: Document | Element | ShadowRoot;
+
+export type SelectorRoot = Document | ShadowRoot;
+
+export type SelectorResult =
+  | { supported: true; selector: string; root: SelectorRoot; rootType: "document" | "shadow-root" }
+  | { supported: false; reason: "closed-shadow-root" | "unsupported-root" | "selector-not-found" };
+
+/**
+ * Builds a selector within the element's own document or open shadow root.
+ * The returned root is required to query the selector safely.
+ */
+export function findSelector(input: Element): SelectorResult {
+  const root = input.getRootNode();
+  if (root.nodeType === Node.DOCUMENT_NODE) {
+    return selectorInRoot(input, root as Document, "document");
+  }
+  if (root.nodeType === Node.DOCUMENT_FRAGMENT_NODE && "host" in root) {
+    const shadowRoot = root as ShadowRoot;
+    if (shadowRoot.mode !== "open") return { supported: false, reason: "closed-shadow-root" };
+    return selectorInRoot(input, shadowRoot, "shadow-root");
+  }
+  return { supported: false, reason: "unsupported-root" };
+}
+
+function selectorInRoot(input: Element, root: SelectorRoot, rootType: "document" | "shadow-root"): SelectorResult {
+  try {
+    const selector = finder(input, { root });
+    if (root.querySelector(selector) !== input) return { supported: false, reason: "selector-not-found" };
+    return { supported: true, selector, root, rootType };
+  } catch {
+    return { supported: false, reason: "selector-not-found" };
+  }
+}
+
 export function finder(input: Element, options?: Partial<FinderOptions>): string {
   function _finder(_input: Element | null, _options?: Partial<FinderOptions>): string {
     if (_input === null) throw new Error();
@@ -34,7 +68,7 @@ export function finder(input: Element, options?: Partial<FinderOptions>): string
       return "html";
     }
     const defaults: FinderOptions = {
-      root: document.body,
+      root: document,
       idName: () => true,
       className: () => true,
       tagName: () => true,
@@ -63,13 +97,13 @@ export function finder(input: Element, options?: Partial<FinderOptions>): string
     }
   }
 
-  function findRootDocument(rootNode: Element | Document, defaults: FinderOptions): Element | Document {
+  function findRootDocument(rootNode: Element | Document | ShadowRoot, defaults: FinderOptions): Element | Document | ShadowRoot {
     if (rootNode.nodeType === 9) {
       // Node.DOCUMENT_NODE
       return rootNode;
     }
     if (rootNode === defaults.root) {
-      return rootNode.ownerDocument;
+      return rootNode.ownerDocument ?? document;
     }
     return rootNode;
   }

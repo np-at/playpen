@@ -24,7 +24,7 @@ import {
   type Announcement,
   type LiveContext,
 } from "../utils/ariaLive.ts";
-import { finder } from "../utils/finder.ts";
+import { findSelector } from "../utils/finder.ts";
 import { isElRendered } from "../utils/isElRendered.ts";
 import { applyToShadows } from "../utils/applyToShadows.ts";
 
@@ -335,11 +335,8 @@ function start(): void {
   }
 
   function selectorFor(el: Element): string {
-    try {
-      return finder(el);
-    } catch {
-      return el.tagName.toLowerCase() + (el.id ? `#${el.id}` : "");
-    }
+    const result = findSelector(el);
+    return result.supported ? result.selector : `[unsupported selector: ${result.reason}]`;
   }
 
   /** Before/after with the changed span marked, via common prefix and suffix. */

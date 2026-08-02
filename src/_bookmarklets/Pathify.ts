@@ -1,65 +1,11 @@
-let useIDRefs = true;
+import { findSelector } from "../utils/finder";
+
 let hidePanels = false;
 let targetAndSourceCompilationReadable = "";
 let targetAndSourceCompilationProcessed = "";
-function* cartesian<T>(head: T[], ...tail: T[][]): Generator<T[], void, unknown> {
-  // @ts-expect-error will be fiiine
-  const remainder: T[][] = tail.length ? cartesian(...tail) : [[]];
-  for (const r of remainder) for (const h of head) yield [h, ...r];
-}
-function findShortestUniqueClassCombination(el: Element): string | undefined {
-  const classList = el.classList;
-  const classListArray = Array.from(classList);
-  let shortestUniqueClassCombination: string | undefined;
-
-  for (const combo of cartesian(classListArray, classListArray)) {
-    const classString = "." + combo.join(".");
-    const f = document.querySelectorAll(classString);
-    if (f.length === 1) {
-      shortestUniqueClassCombination = classString;
-      break;
-    }
-  }
-  return shortestUniqueClassCombination;
-}
-function getShortestCssSelector(el: Element): string {
-  let currentEl = el;
-  let shortestUniqueClassCombination;
-
-  do {
-    shortestUniqueClassCombination = findShortestUniqueClassCombination(currentEl);
-    if (shortestUniqueClassCombination) {
-      return shortestUniqueClassCombination;
-    }
-    currentEl = currentEl.parentNode as Element;
-  } while (currentEl.parentNode);
-  const path = [];
-  while (el.nodeType === Node.ELEMENT_NODE) {
-    let selector = el.nodeName.toLowerCase();
-    if (el.id) {
-      selector += "#" + el.id;
-      path.unshift(selector);
-      break;
-    } else {
-      let sib: Element | null = el;
-      let nth = 1;
-      while (sib) {
-        if (sib.nodeName.toLowerCase() === selector) {
-          nth++;
-        }
-        sib = sib.previousElementSibling;
-      }
-      if (nth !== 1) {
-        selector += ":nth-of-type(" + String(nth) + ")";
-      }
-    }
-    path.unshift(selector);
-    el = el.parentNode as Element;
-  }
-  return path.join(" > ");
-}
 function getXpath(el: Element): string {
-  return getShortestCssSelector(el);
+  const result = findSelector(el);
+  return result.supported ? result.selector : `[unsupported selector: ${result.reason}]`;
   // let currentEl = el;
   // let currentElTagName = el.tagName.toLowerCase();
   // let parentEl: HTMLElement;
@@ -452,15 +398,6 @@ function getXpathAndSource(): void {
             // stays visible instead of silently disappearing.
             highlightElement(currentEl);
           }
-        }
-      }
-      if (e.key === "x") {
-        useIDRefs = !useIDRefs;
-        console.log("useIDRefs = ", useIDRefs);
-        if (useIDRefs) {
-          infoPanel.innerHTML = "Using ID refs (where available) to get xpath";
-        } else {
-          infoPanel.innerHTML = "Using element position in DOM to get xpath";
         }
       }
       if (e.key === "h") {
