@@ -106,4 +106,11 @@ Outcome: lint passed; 4 focused files / 8 tests passed; `tsc && vite build` pass
 
 ### Fix-round validation
 
-- Full suite and final commit validation are recorded with the fix commit.
+- `pnpm lint` — passed.
+- `pnpm test` — passed: 17 files / 93 tests (with approved loopback binding for browser Vitest).
+- `pnpm build` — passed (`tsc && vite build`); the repository's existing large-chunk advisory remained.
+- `git diff --check` — passed before commit.
+
+### Fix-round commit
+
+- `c2d9683 fix(bookmarklets): close traversal review gaps`
