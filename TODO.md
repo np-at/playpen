@@ -121,14 +121,14 @@ These tasks establish the contracts required by all later work.
 **Files:** `src/utils/applyToShadows.ts`, `src/utils/digIntoIframes.ts`; consumers `ForceFocusOutline.ts`,
 `TextSpacing.ts`, `showHeadings.ts`, `MonitorAriaLive.ts`
 
-- [ ] Replace the unreadable asynchronous `fetch(..., {mode: "no-cors"})` fallback with a synchronous traversal result that
+- [x] Replace the unreadable asynchronous `fetch(..., {mode: "no-cors"})` fallback with a synchronous traversal result that
   records skipped cross-origin frames.
-- [ ] Prevent duplicate visits and recursion cycles; return visited documents/roots and skipped-root metadata.
-- [ ] Decide how consumers handle frames or shadow roots added after activation: observe them or explicitly label the scan as a
+- [x] Prevent duplicate visits and recursion cycles; return visited documents/roots and skipped-root metadata.
+- [x] Decide how consumers handle frames or shadow roots added after activation: observe them or explicitly label the scan as a
   snapshot.
-- [ ] Avoid top-realm `instanceof Element`/`HTMLElement` checks for iframe nodes; use `nodeType`, `ownerDocument.defaultView`, or
+- [x] Avoid top-realm `instanceof Element`/`HTMLElement` checks for iframe nodes; use `nodeType`, `ownerDocument.defaultView`, or
   constructors from the node's realm.
-- [ ] Add nested same-origin iframe, cross-origin iframe, open shadow-root, and dynamically added root tests.
+- [x] Add nested same-origin iframe, cross-origin iframe, open shadow-root, and dynamically added root tests.
 
 ### Correct rendered-state detection
 
