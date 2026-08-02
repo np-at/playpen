@@ -135,11 +135,11 @@ These tasks establish the contracts required by all later work.
 **Files:** `src/utils/isElRendered.ts`, `src/utils/ariaLive.ts`; consumers `FocusStyleCheck.ts`,
 `MonitorAriaLive.ts`, `showHeadings.ts`
 
-- [ ] Change the `<details>/<summary>` containment check to use the `compareDocumentPosition()` bitmask.
-- [ ] Walk through shadow hosts and use `el.ownerDocument.defaultView?.getComputedStyle(el)` for iframe elements.
-- [ ] Define and test whether "rendered" includes `visibility: hidden`, `content-visibility`, `aria-hidden`, disconnected nodes,
+- [x] Change the `<details>/<summary>` containment check to use the `compareDocumentPosition()` bitmask.
+- [x] Walk through shadow hosts and use `el.ownerDocument.defaultView?.getComputedStyle(el)` for iframe elements.
+- [x] Define and test whether "rendered" includes `visibility: hidden`, `content-visibility`, `aria-hidden`, disconnected nodes,
   and hidden ancestors; keep visual rendering and AT-hidden checks separate where needed.
-- [ ] Add tests for closed details, descendants of the first summary, hidden shadow hosts, iframe elements, and `aria-hidden`
+- [x] Add tests for closed details, descendants of the first summary, hidden shadow hosts, iframe elements, and `aria-hidden`
   ancestors.
 
 ### Make assertions portable
