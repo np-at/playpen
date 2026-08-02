@@ -146,8 +146,8 @@ These tasks establish the contracts required by all later work.
 
 **Files:** `src/utils/assert.ts`
 
-- [ ] Guard the V8-only `Error.captureStackTrace` call so assertions preserve their intended error on Firefox and Safari.
-- [ ] Add a browser test that temporarily removes `Error.captureStackTrace`.
+- [x] Guard the V8-only `Error.captureStackTrace` call so assertions preserve their intended error on Firefox and Safari.
+- [x] Add a browser test that temporarily removes `Error.captureStackTrace`.
 
 ---
 
