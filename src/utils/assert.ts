@@ -3,7 +3,9 @@ export function assert(condition: unknown, message?: string, ...debugObjects: un
     console.dir(debugObjects);
     const err = new Error(message || "Assertion failed", { cause: debugObjects.length > 0 ? debugObjects : undefined });
 
-    Error.captureStackTrace(err, assert);
+    if (typeof Error.captureStackTrace === "function") {
+      Error.captureStackTrace(err, assert);
+    }
 
     throw err;
   }
