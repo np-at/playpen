@@ -349,13 +349,23 @@ describe("FocusStyleCheck page contract", () => {
     await harness.run(() => {
       writeFocusStyleReport(report);
     });
-    expect(harness.snapshot().console).toContainEqual({
-      level: "error",
-      args: [
-        "Focus Style Check: page focus handlers changed history; current URL and reliably comparable state were restored. Arbitrary History.state structured-clone representations cannot be guaranteed fully restorable, and pushed entries cannot be safely erased.",
-        report.historyMutations,
-      ],
-    });
+    const historyAlerts = harness
+      .snapshot()
+      .console.filter(
+        ({ level, args }) =>
+          level === "error" &&
+          args[0] ===
+            "Focus Style Check: page focus handlers changed history; current URL and reliably comparable state were restored. Arbitrary History.state structured-clone representations cannot be guaranteed fully restorable, and pushed entries cannot be safely erased.",
+      );
+    expect(historyAlerts).toEqual([
+      {
+        level: "error",
+        args: [
+          "Focus Style Check: page focus handlers changed history; current URL and reliably comparable state were restored. Arbitrary History.state structured-clone representations cannot be guaranteed fully restorable, and pushed entries cannot be safely erased.",
+          report.historyMutations,
+        ],
+      },
+    ]);
   });
 
   it("detects and restores a same-URL replaceState mutation with Map history state", async () => {
