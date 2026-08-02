@@ -27,6 +27,11 @@ let rootDocument: Document | Element | ShadowRoot;
 
 export type SelectorRoot = Document | ShadowRoot;
 
+export interface SelectorRootCollection {
+  supported: SelectorRoot[];
+  unsupported: Array<{ reason: "cross-origin-iframe"; frame: HTMLIFrameElement }>;
+}
+
 export type SelectorResult =
   | { supported: true; selector: string; root: SelectorRoot; rootType: "document" | "shadow-root" }
   | { supported: false; reason: "closed-shadow-root" | "unsupported-root" | "selector-not-found" };
@@ -48,6 +53,34 @@ export function findSelector(input: Element): SelectorResult {
   return { supported: false, reason: "unsupported-root" };
 }
 
+/** Walks every document and open shadow root reachable without crossing origin boundaries. */
+export function collectSelectorRoots(documentRoot: Document): SelectorRootCollection {
+  const supported: SelectorRoot[] = [];
+  const unsupported: SelectorRootCollection["unsupported"] = [];
+  const visited = new Set<SelectorRoot>();
+
+  function visit(root: SelectorRoot): void {
+    if (visited.has(root)) return;
+    visited.add(root);
+    supported.push(root);
+
+    for (const element of Array.from(root.querySelectorAll("*"))) {
+      if (element.shadowRoot) visit(element.shadowRoot);
+      if (element.localName !== "iframe") continue;
+      try {
+        const frame = element as HTMLIFrameElement;
+        if (frame.contentDocument) visit(frame.contentDocument);
+        else unsupported.push({ reason: "cross-origin-iframe", frame });
+      } catch {
+        unsupported.push({ reason: "cross-origin-iframe", frame: element as HTMLIFrameElement });
+      }
+    }
+  }
+
+  visit(documentRoot);
+  return { supported, unsupported };
+}
+
 function selectorInRoot(input: Element, root: SelectorRoot, rootType: "document" | "shadow-root"): SelectorResult {
   try {
     const selector = finder(input, { root });
@@ -58,7 +91,7 @@ function selectorInRoot(input: Element, root: SelectorRoot, rootType: "document"
   }
 }
 
-export function finder(input: Element, options?: Partial<FinderOptions>): string {
+function finder(input: Element, options?: Partial<FinderOptions>): string {
   function _finder(_input: Element | null, _options?: Partial<FinderOptions>): string {
     if (_input === null) throw new Error();
     if (input.nodeType !== Node.ELEMENT_NODE) {

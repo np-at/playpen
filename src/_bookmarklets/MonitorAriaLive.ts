@@ -24,7 +24,7 @@ import {
   type Announcement,
   type LiveContext,
 } from "../utils/ariaLive.ts";
-import { findSelector } from "../utils/finder.ts";
+import { findSelector, type SelectorResult } from "../utils/finder.ts";
 import { isElRendered } from "../utils/isElRendered.ts";
 import { applyToShadows } from "../utils/applyToShadows.ts";
 
@@ -67,6 +67,8 @@ function start(): void {
   const htmlSnapshots = new WeakMap<Element, string>();
   /** Regions muted from the panel, with the attribute values to put back. */
   const muted = new Map<Element, string | null>();
+  /** Keeps the exact document or shadow root needed to resolve each displayed selector. */
+  const selectorContexts = new WeakMap<HTMLElement, SelectorResult>();
 
   let capturing = true;
   let pauseOnAnnounce = false;
@@ -281,11 +283,14 @@ function start(): void {
 
     const head = document.createElement("div");
     head.className = "alm-entry-head";
+    const selector = selectorFor(ctx.region);
+    const selectorSpan = span("alm-sel", selectorText(selector));
+    selectorContexts.set(selectorSpan, selector);
     head.append(
       span("alm-time", new Date().toLocaleTimeString()),
       span("alm-badge", announcement.politeness),
       span("alm-role", ctx.source === "implicit" ? `role=${ctx.roleName ?? "?"}` : "aria-live"),
-      span("alm-sel", selectorFor(ctx.region)),
+      selectorSpan,
     );
     entry.appendChild(head);
 
@@ -334,8 +339,11 @@ function start(): void {
     if (pauseOnAnnounce && suppressed === null) freeze();
   }
 
-  function selectorFor(el: Element): string {
-    const result = findSelector(el);
+  function selectorFor(el: Element): SelectorResult {
+    return findSelector(el);
+  }
+
+  function selectorText(result: SelectorResult): string {
     return result.supported ? result.selector : `[unsupported selector: ${result.reason}]`;
   }
 

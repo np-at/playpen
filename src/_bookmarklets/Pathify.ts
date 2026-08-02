@@ -1,10 +1,13 @@
-import { findSelector } from "../utils/finder";
+import { collectSelectorRoots, findSelector, type SelectorResult } from "../utils/finder";
 
 let hidePanels = false;
 let targetAndSourceCompilationReadable = "";
 let targetAndSourceCompilationProcessed = "";
-function getXpath(el: Element): string {
-  const result = findSelector(el);
+function getXpath(el: Element): SelectorResult {
+  return findSelector(el);
+}
+
+function selectorText(result: SelectorResult): string {
   return result.supported ? result.selector : `[unsupported selector: ${result.reason}]`;
   // let currentEl = el;
   // let currentElTagName = el.tagName.toLowerCase();
@@ -61,6 +64,7 @@ function getXpathAndSource(): void {
   let outputPanelForARC_input_label: HTMLLabelElement;
   let outputPanelForARC_closeButton: HTMLButtonElement;
   let outputPanelForARCAdded = false;
+  const capturedTargets: Array<{ selector: SelectorResult; markup: string }> = [];
 
   if (!document.querySelector("#tempDOMDumpingGround")) {
     const tempDOMDumpingGroundNew = document.createElement("div");
@@ -69,7 +73,9 @@ function getXpathAndSource(): void {
     document.body.appendChild(tempDOMDumpingGroundNew);
   }
 
-  const allEls = document.querySelectorAll("*");
+  const roots = collectSelectorRoots(document);
+  const allEls = roots.supported.flatMap((root) => Array.from(root.querySelectorAll("*")));
+  if (roots.unsupported.length > 0) console.warn("Pathify skipped unsupported roots", roots.unsupported);
 
   function downloadReadable(filename: string, text: string | number | boolean): void {
     const allTargetsFileDownloadLinkReadable = document.querySelector("#allTargetsFileDownloadLinkReadable");
@@ -240,7 +246,8 @@ function getXpathAndSource(): void {
     }
     buildMarkdownFileOutput();
     unhighlightElement(el);
-    outputPanelForARC_input.value = getXpath(el);
+    const selector = getXpath(el);
+    outputPanelForARC_input.value = selectorText(selector);
     let markup = getNodeHTML(el).replace(' class=""', "");
 
     const markupSplit = markup.split("\n");
@@ -254,9 +261,11 @@ function getXpathAndSource(): void {
     // outputPanelForARC_textarea.value = indented;
     outputPanelForARC_textarea.value = markup;
 
+    capturedTargets.push({ selector, markup });
+    const selectorLabel = selectorText(selector);
     targetAndSourceCompilationReadable +=
-      getXpath(el) + "\n" + markup + "🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸 END target and source markup 🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸\n";
-    targetAndSourceCompilationProcessed += getXpath(el) + "~~~//~~~" + flatten(markup) + "\n";
+      selectorLabel + "\n" + markup + "🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸 END target and source markup 🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸\n";
+    targetAndSourceCompilationProcessed += selectorLabel + "~~~//~~~" + flatten(markup) + "\n";
     console.clear();
     console.log("targetAndSourceCompilationReadable = \n", targetAndSourceCompilationReadable);
   }
@@ -297,7 +306,7 @@ function getXpathAndSource(): void {
         e.stopPropagation();
         e.preventDefault();
         getNodeDetails(el);
-        infoPanel.innerHTML = "Values captured for " + getXpath(el);
+        infoPanel.innerHTML = "Values captured for " + selectorText(getXpath(el));
       }
     });
     el.addEventListener("focus", (e) => {
@@ -338,7 +347,7 @@ function getXpathAndSource(): void {
   function updateInfoPanel(el: Element): void {
     // console.clear();
     // console.log(getXpath(el));
-    infoPanel.innerHTML = getXpath(el);
+    infoPanel.innerHTML = selectorText(getXpath(el));
   }
 
   function checkKeyPresses(): void {
@@ -348,7 +357,7 @@ function getXpathAndSource(): void {
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        if (currentEl.parentNode && currentEl.tagName !== "HTML") {
+        if (currentEl.parentNode instanceof Element && currentEl.tagName !== "HTML") {
           unhighlightElement(currentEl);
           parentEl = currentEl.parentNode as HTMLElement;
           currentEl = parentEl;
@@ -426,7 +435,7 @@ function getXpathAndSource(): void {
   // @ts-expect-error will be fiiine
   if (typeof infoPanel !== "undefined") {
     infoPanel.innerHTML =
-      "<p>Xpath and Source getter started.</p><ul><li>Hover over on elements on the page, then click when the correct element is highlighted</li><li>Or <kbd>Tab</kbd> to a focusable element on the page and then press the arrow keys to fine tune your selection (choose parent, child and sibling elements in the DOM) and confirm that selection with <kbd>Enter</kbd></li><li>You can toggle the xpath type by (DOM position or use ID if present) pressing <kbd>x</kbd> key</li><li>Show/hide panels and download links by the <kbd>h</kbd> key</li></ul>";
+      "<p>Xpath and Source getter started.</p><ul><li>Hover over on elements on the page, then click when the correct element is highlighted</li><li>Or <kbd>Tab</kbd> to a focusable element on the page and then press the arrow keys to fine tune your selection (choose parent, child and sibling elements in the DOM) and confirm that selection with <kbd>Enter</kbd></li><li>Show/hide panels and download links by the <kbd>h</kbd> key</li></ul>";
   }
 }
 

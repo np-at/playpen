@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { findSelector } from "./finder.ts";
+import { collectSelectorRoots, findSelector } from "./finder.ts";
 
 const fixtures: Element[] = [];
 
@@ -41,7 +41,8 @@ describe("findSelector", () => {
     const root = fixture('<section class="scope"><button>Save</button></section><section><button>Save</button></section>');
     const target = root.querySelector(".scope button")!;
 
-    expectSupported(target);
+    const result = findSelector(target);
+    expect(result).toMatchObject({ supported: true, selector: ".scope > button", root: document });
   });
 
   it.each([0, 1, 2])("selects sibling %i without an off-by-one position", (index) => {
@@ -91,5 +92,46 @@ describe("findSelector", () => {
       supported: false,
       reason: "closed-shadow-root",
     });
+  });
+
+  it("collects open shadow roots and same-origin iframe documents with their real contexts", () => {
+    const host = fixture("<div></div>").firstElementChild!;
+    const shadow = host.attachShadow({ mode: "open" });
+    shadow.innerHTML = "<button>Shadow</button>";
+    const frame = fixture("<iframe></iframe>").querySelector("iframe")!;
+    const frameDocument = frame.contentDocument!;
+    frameDocument.body.innerHTML = "<button>Frame</button>";
+
+    const roots = collectSelectorRoots(document);
+
+    expect(roots.supported).toEqual(expect.arrayContaining([document, shadow, frameDocument]));
+    expect(roots.unsupported).toEqual([]);
+  });
+
+  it("reports an unreadable iframe without fetching it", () => {
+    const frame = fixture("<iframe></iframe>").querySelector("iframe")!;
+    Object.defineProperty(frame, "contentDocument", {
+      configurable: true,
+      get: () => {
+        throw new DOMException("Denied", "SecurityError");
+      },
+    });
+
+    const roots = collectSelectorRoots(document);
+
+    expect(roots.unsupported).toEqual([{ reason: "cross-origin-iframe", frame }]);
+  });
+
+  it("continues into nested same-origin iframe documents across window realms", () => {
+    const frame = fixture("<iframe></iframe>").querySelector("iframe")!;
+    const frameDocument = frame.contentDocument!;
+    frameDocument.body.innerHTML = "<iframe></iframe>";
+    const nestedFrame = frameDocument.querySelector("iframe")!;
+    const nestedDocument = nestedFrame.contentDocument!;
+    nestedDocument.body.innerHTML = "<button>Nested frame</button>";
+
+    const roots = collectSelectorRoots(document);
+
+    expect(roots.supported).toContain(nestedDocument);
   });
 });

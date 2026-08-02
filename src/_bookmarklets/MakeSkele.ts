@@ -1,4 +1,4 @@
-import { findSelector } from "../utils/finder";
+import { collectSelectorRoots, findSelector, type SelectorRoot } from "../utils/finder";
 
 const nonSemanticTags = ["SCRIPT", "HEAD"];
 
@@ -71,6 +71,7 @@ interface NodeRep {
   childrenHash?: number;
   children: NodeRep[];
   sel?: string;
+  selectorContext?: SelectorRoot;
   selectorRoot?: "document" | "shadow-root";
 }
 function makeNodeRep(el: LinkElement): NodeRep {
@@ -86,6 +87,7 @@ function makeNodeRep(el: LinkElement): NodeRep {
     childrenHash: el.hash_data?.childrenHash,
     textHash: el.hash_data?.textHash,
     sel: selector.supported ? selector.selector : undefined,
+    selectorContext: selector.supported ? selector.root : undefined,
     selectorRoot: selector.supported ? selector.rootType : undefined,
   };
   return rep;
@@ -152,16 +154,16 @@ function hashChildren(el: LinkElement): LinkElement {
   return el;
 }
 
-function MakeSkele(root: LinkElement): void {
-  // console.log("testing2")
-  // root.querySelectorAll("body *").forEach((el) => {
-  //   hashNode(el);
-  // });
-  const n = hashNode(root);
-  console.log(n);
-  // Array.from(root.children).forEach((el) => {
-  //   hashNode(el);
-  // })
+function MakeSkele(root: Document): void {
+  const roots = collectSelectorRoots(root);
+  const nodes = roots.supported.flatMap((selectorRoot) => {
+    if (selectorRoot.nodeType === Node.DOCUMENT_NODE) {
+      const body = (selectorRoot as Document).body;
+      return body ? [hashNode(body)] : [];
+    }
+    return Array.from(selectorRoot.children).map((child) => hashNode(child));
+  });
+  console.log({ nodes, unsupportedRoots: roots.unsupported });
 }
 
-MakeSkele(document.body);
+MakeSkele(document);
