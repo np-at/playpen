@@ -1,65 +1,14 @@
-let useIDRefs = true;
+import { collectSelectorRoots, findSelector, formatSelector, type SelectorResult } from "../utils/finder";
+
 let hidePanels = false;
 let targetAndSourceCompilationReadable = "";
 let targetAndSourceCompilationProcessed = "";
-function* cartesian<T>(head: T[], ...tail: T[][]): Generator<T[], void, unknown> {
-  // @ts-expect-error will be fiiine
-  const remainder: T[][] = tail.length ? cartesian(...tail) : [[]];
-  for (const r of remainder) for (const h of head) yield [h, ...r];
+function getXpath(el: Element): SelectorResult {
+  return findSelector(el);
 }
-function findShortestUniqueClassCombination(el: Element): string | undefined {
-  const classList = el.classList;
-  const classListArray = Array.from(classList);
-  let shortestUniqueClassCombination: string | undefined;
 
-  for (const combo of cartesian(classListArray, classListArray)) {
-    const classString = "." + combo.join(".");
-    const f = document.querySelectorAll(classString);
-    if (f.length === 1) {
-      shortestUniqueClassCombination = classString;
-      break;
-    }
-  }
-  return shortestUniqueClassCombination;
-}
-function getShortestCssSelector(el: Element): string {
-  let currentEl = el;
-  let shortestUniqueClassCombination;
-
-  do {
-    shortestUniqueClassCombination = findShortestUniqueClassCombination(currentEl);
-    if (shortestUniqueClassCombination) {
-      return shortestUniqueClassCombination;
-    }
-    currentEl = currentEl.parentNode as Element;
-  } while (currentEl.parentNode);
-  const path = [];
-  while (el.nodeType === Node.ELEMENT_NODE) {
-    let selector = el.nodeName.toLowerCase();
-    if (el.id) {
-      selector += "#" + el.id;
-      path.unshift(selector);
-      break;
-    } else {
-      let sib: Element | null = el;
-      let nth = 1;
-      while (sib) {
-        if (sib.nodeName.toLowerCase() === selector) {
-          nth++;
-        }
-        sib = sib.previousElementSibling;
-      }
-      if (nth !== 1) {
-        selector += ":nth-of-type(" + String(nth) + ")";
-      }
-    }
-    path.unshift(selector);
-    el = el.parentNode as Element;
-  }
-  return path.join(" > ");
-}
-function getXpath(el: Element): string {
-  return getShortestCssSelector(el);
+export function pathifySelectorText(result: SelectorResult): string {
+  return formatSelector(result);
   // let currentEl = el;
   // let currentElTagName = el.tagName.toLowerCase();
   // let parentEl: HTMLElement;
@@ -123,7 +72,9 @@ function getXpathAndSource(): void {
     document.body.appendChild(tempDOMDumpingGroundNew);
   }
 
-  const allEls = document.querySelectorAll("*");
+  const roots = collectSelectorRoots(document);
+  const allEls = roots.supported.flatMap((root) => Array.from(root.querySelectorAll("*")));
+  if (roots.unsupported.length > 0) console.warn("Pathify skipped unsupported roots", roots.unsupported);
 
   function downloadReadable(filename: string, text: string | number | boolean): void {
     const allTargetsFileDownloadLinkReadable = document.querySelector("#allTargetsFileDownloadLinkReadable");
@@ -294,7 +245,8 @@ function getXpathAndSource(): void {
     }
     buildMarkdownFileOutput();
     unhighlightElement(el);
-    outputPanelForARC_input.value = getXpath(el);
+    const selector = getXpath(el);
+    outputPanelForARC_input.value = pathifySelectorText(selector);
     let markup = getNodeHTML(el).replace(' class=""', "");
 
     const markupSplit = markup.split("\n");
@@ -308,9 +260,10 @@ function getXpathAndSource(): void {
     // outputPanelForARC_textarea.value = indented;
     outputPanelForARC_textarea.value = markup;
 
+    const selectorLabel = pathifySelectorText(selector);
     targetAndSourceCompilationReadable +=
-      getXpath(el) + "\n" + markup + "🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸 END target and source markup 🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸\n";
-    targetAndSourceCompilationProcessed += getXpath(el) + "~~~//~~~" + flatten(markup) + "\n";
+      selectorLabel + "\n" + markup + "🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸 END target and source markup 🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸🔸\n";
+    targetAndSourceCompilationProcessed += selectorLabel + "~~~//~~~" + flatten(markup) + "\n";
     console.clear();
     console.log("targetAndSourceCompilationReadable = \n", targetAndSourceCompilationReadable);
   }
@@ -351,7 +304,7 @@ function getXpathAndSource(): void {
         e.stopPropagation();
         e.preventDefault();
         getNodeDetails(el);
-        infoPanel.innerHTML = "Values captured for " + getXpath(el);
+        infoPanel.innerHTML = "Values captured for " + pathifySelectorText(getXpath(el));
       }
     });
     el.addEventListener("focus", (e) => {
@@ -392,7 +345,7 @@ function getXpathAndSource(): void {
   function updateInfoPanel(el: Element): void {
     // console.clear();
     // console.log(getXpath(el));
-    infoPanel.innerHTML = getXpath(el);
+    infoPanel.innerHTML = pathifySelectorText(getXpath(el));
   }
 
   function checkKeyPresses(): void {
@@ -402,7 +355,7 @@ function getXpathAndSource(): void {
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        if (currentEl.parentNode && currentEl.tagName !== "HTML") {
+        if (currentEl.parentNode instanceof Element && currentEl.tagName !== "HTML") {
           unhighlightElement(currentEl);
           parentEl = currentEl.parentNode as HTMLElement;
           currentEl = parentEl;
@@ -454,15 +407,6 @@ function getXpathAndSource(): void {
           }
         }
       }
-      if (e.key === "x") {
-        useIDRefs = !useIDRefs;
-        console.log("useIDRefs = ", useIDRefs);
-        if (useIDRefs) {
-          infoPanel.innerHTML = "Using ID refs (where available) to get xpath";
-        } else {
-          infoPanel.innerHTML = "Using element position in DOM to get xpath";
-        }
-      }
       if (e.key === "h") {
         console.log("hidePanels = ", hidePanels);
         if (!hidePanels) {
@@ -489,7 +433,7 @@ function getXpathAndSource(): void {
   // @ts-expect-error will be fiiine
   if (typeof infoPanel !== "undefined") {
     infoPanel.innerHTML =
-      "<p>Xpath and Source getter started.</p><ul><li>Hover over on elements on the page, then click when the correct element is highlighted</li><li>Or <kbd>Tab</kbd> to a focusable element on the page and then press the arrow keys to fine tune your selection (choose parent, child and sibling elements in the DOM) and confirm that selection with <kbd>Enter</kbd></li><li>You can toggle the xpath type by (DOM position or use ID if present) pressing <kbd>x</kbd> key</li><li>Show/hide panels and download links by the <kbd>h</kbd> key</li></ul>";
+      "<p>Xpath and Source getter started.</p><ul><li>Hover over on elements on the page, then click when the correct element is highlighted</li><li>Or <kbd>Tab</kbd> to a focusable element on the page and then press the arrow keys to fine tune your selection (choose parent, child and sibling elements in the DOM) and confirm that selection with <kbd>Enter</kbd></li><li>Show/hide panels and download links by the <kbd>h</kbd> key</li></ul>";
   }
 }
 

@@ -11,7 +11,7 @@ interface Knot {
 type Path = Knot[];
 
 export interface FinderOptions {
-  root: Element;
+  root: Element | Document | ShadowRoot;
   idName: (name: string) => boolean;
   className: (name: string) => boolean;
   tagName: (name: string) => boolean;
@@ -23,8 +23,109 @@ export interface FinderOptions {
 }
 
 let config: FinderOptions;
-let rootDocument: Document | Element;
-export function finder(input: Element, options?: Partial<FinderOptions>): string {
+let rootDocument: Document | Element | ShadowRoot;
+
+export type SelectorRoot = Document | ShadowRoot;
+
+export interface SkippedSelectorRoot {
+  reason: "cross-origin-iframe";
+  frame: HTMLIFrameElement;
+}
+
+/**
+ * A synchronous snapshot of roots reachable from a document or open shadow root.
+ * Roots added after this function returns require a new scan.
+ */
+export interface SelectorRootCollection {
+  visited: SelectorRoot[];
+  skipped: SkippedSelectorRoot[];
+  /** @deprecated Use `visited`. Kept for bookmarklets already using Task 1's API. */
+  supported: SelectorRoot[];
+  /** @deprecated Use `skipped`. Kept for bookmarklets already using Task 1's API. */
+  unsupported: SkippedSelectorRoot[];
+}
+
+export type SelectorResult =
+  | { supported: true; selector: string; root: SelectorRoot; rootType: "document" | "shadow-root" }
+  | { supported: false; reason: "closed-shadow-root" | "unsupported-root" | "selector-not-found" };
+
+/**
+ * Builds a selector within the element's own document or open shadow root.
+ * The returned root is required to query the selector safely.
+ */
+export function findSelector(input: Element): SelectorResult {
+  const root = input.getRootNode();
+  if (root.nodeType === Node.DOCUMENT_NODE) {
+    return selectorInRoot(input, root as Document, "document");
+  }
+  if (root.nodeType === Node.DOCUMENT_FRAGMENT_NODE && "host" in root) {
+    const shadowRoot = root as ShadowRoot;
+    if (shadowRoot.mode !== "open") return { supported: false, reason: "closed-shadow-root" };
+    return selectorInRoot(input, shadowRoot, "shadow-root");
+  }
+  return { supported: false, reason: "unsupported-root" };
+}
+
+/** Walks every reachable document and open shadow root without crossing origin boundaries. */
+export function collectSelectorRoots(root: SelectorRoot): SelectorRootCollection {
+  const visitedRoots: SelectorRoot[] = [];
+  const skippedRoots: SkippedSelectorRoot[] = [];
+  const visited = new Set<SelectorRoot>();
+
+  function visit(currentRoot: SelectorRoot): void {
+    if (visited.has(currentRoot)) return;
+    visited.add(currentRoot);
+    visitedRoots.push(currentRoot);
+
+    for (const element of Array.from(currentRoot.querySelectorAll("*"))) {
+      if (element.shadowRoot) visit(element.shadowRoot);
+      if (element.localName !== "iframe") continue;
+      try {
+        const frame = element as HTMLIFrameElement;
+        if (frame.contentDocument) visit(frame.contentDocument);
+        else skippedRoots.push({ reason: "cross-origin-iframe", frame });
+      } catch {
+        skippedRoots.push({ reason: "cross-origin-iframe", frame: element as HTMLIFrameElement });
+      }
+    }
+  }
+
+  visit(root);
+  return { visited: visitedRoots, skipped: skippedRoots, supported: visitedRoots, unsupported: skippedRoots };
+}
+
+/** Formats a selector with every document/shadow boundary needed to resolve it. */
+export function formatSelector(result: SelectorResult): string {
+  if (!result.supported) return `[unsupported selector: ${result.reason}]`;
+  return `${formatSelectorRoot(result.root)} :: ${result.selector}`;
+}
+
+function formatSelectorRoot(root: SelectorRoot): string {
+  if (root.nodeType === Node.DOCUMENT_NODE) {
+    if (root === document) return "top-document";
+    const frame = (root as Document).defaultView?.frameElement;
+    if (!frame) return "top-document";
+    const frameSelector = findSelector(frame);
+    if (!frameSelector.supported) return "iframe-document";
+    return `${formatSelectorRoot(frameSelector.root)} > iframe(${frameSelector.selector}) > document`;
+  }
+
+  const hostSelector = findSelector((root as ShadowRoot).host);
+  if (!hostSelector.supported) return "shadow-root";
+  return `${formatSelectorRoot(hostSelector.root)} > shadow-root(${hostSelector.selector})`;
+}
+
+function selectorInRoot(input: Element, root: SelectorRoot, rootType: "document" | "shadow-root"): SelectorResult {
+  try {
+    const selector = finder(input, { root });
+    if (root.querySelector(selector) !== input) return { supported: false, reason: "selector-not-found" };
+    return { supported: true, selector, root, rootType };
+  } catch {
+    return { supported: false, reason: "selector-not-found" };
+  }
+}
+
+function finder(input: Element, options?: Partial<FinderOptions>): string {
   function _finder(_input: Element | null, _options?: Partial<FinderOptions>): string {
     if (_input === null) throw new Error();
     if (input.nodeType !== Node.ELEMENT_NODE) {
@@ -34,7 +135,7 @@ export function finder(input: Element, options?: Partial<FinderOptions>): string
       return "html";
     }
     const defaults: FinderOptions = {
-      root: document.body,
+      root: document,
       idName: () => true,
       className: () => true,
       tagName: () => true,
@@ -63,13 +164,13 @@ export function finder(input: Element, options?: Partial<FinderOptions>): string
     }
   }
 
-  function findRootDocument(rootNode: Element | Document, defaults: FinderOptions): Element | Document {
+  function findRootDocument(rootNode: Element | Document | ShadowRoot, defaults: FinderOptions): Element | Document | ShadowRoot {
     if (rootNode.nodeType === 9) {
       // Node.DOCUMENT_NODE
       return rootNode;
     }
     if (rootNode === defaults.root) {
-      return rootNode.ownerDocument;
+      return rootNode.ownerDocument ?? document;
     }
     return rootNode;
   }

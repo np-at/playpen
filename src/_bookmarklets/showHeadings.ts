@@ -1,5 +1,6 @@
 // Sourced from https://github.com/hinderlingvolkart/h123/blob/master/src/bookmarklet.js
-import { digIntoIframes } from "../utils/digIntoIframes";
+import { collectSelectorRoots } from "../utils/finder.ts";
+import { isElAriaHidden, isElRendered } from "../utils/isElRendered.ts";
 
 const containerId = "a11y-bookmarklet";
 const containerStyle =
@@ -126,25 +127,12 @@ interface OutlineItem {
   el: HTMLElement;
 }
 
-function applyToShadows(root: HTMLElement | ShadowRoot, fxn: (arg0: ShadowRoot) => void): void {
-  for (const el of Array.from(root.querySelectorAll("*"))) {
-    if (el.shadowRoot) {
-      fxn(el.shadowRoot);
-      // el.shadowRoot.appendChild(s.cloneNode(true));
-      applyToShadows(el.shadowRoot, fxn);
-    }
-  }
-}
-
 function getOutline(): OutlineItem[] {
   let previousLevel = 0;
-  const els: Element[] = Array.from(document.querySelectorAll('h1,h2,h3,h4,h5,h6,h7,[role="heading"]'));
-  applyToShadows(document.body, (root) => {
-    els.push(...Array.from(root.querySelectorAll('h1,h2,h3,h4,h5,h6,h7,[role="heading"]')));
-  });
-  digIntoIframes(document, (doc) => {
-    els.push(...Array.from(doc.querySelectorAll('h1,h2,h3,h4,h5,h6,h7,[role="heading"]')));
-  });
+  // This is intentionally a snapshot: headings in roots added later appear after re-running the bookmarklet.
+  const snapshot = collectSelectorRoots(document);
+  const els = snapshot.visited.flatMap((root) => Array.from(root.querySelectorAll('h1,h2,h3,h4,h5,h6,h7,[role="heading"]')));
+  if (snapshot.skipped.length > 0) console.warn("Show Headings skipped cross-origin iframes", snapshot.skipped);
 
   const result: Array<{
     visible: boolean;
@@ -210,38 +198,13 @@ function htmlEntities(str?: string): string {
 
 function isVisible(el: Element | null): boolean {
   if (el == null) return true;
-  let css = window.getComputedStyle(el);
-  let cssVisible = false;
-  while (el) {
-    if (css.display === "none") {
-      return false;
-    }
-    if (!cssVisible) {
-      if (css.visibility === "hidden") {
-        return false;
-      }
-      if (css.visibility === "visible") {
-        cssVisible = true;
-      }
-    }
-    if (el.getAttribute("aria-hidden") === "true") {
-      return false;
-    }
-    el = el.parentElement;
-    try {
-      if (el) {
-        css = window.getComputedStyle(el);
-      }
-    } catch {
-      return true; // happens on window element
-    }
-  }
-  return true;
+  return isElRendered(el) && !isElAriaHidden(el);
 }
 
 function isVisuallyHidden(el: Element): true | undefined {
   const size = el.getBoundingClientRect();
-  const css = window.getComputedStyle(el);
+  const css = el.ownerDocument.defaultView?.getComputedStyle(el);
+  if (css === undefined) return;
   if (css.position === "absolute") {
     if (size.width <= 1 && size.height <= 1) {
       return true;

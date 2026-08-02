@@ -24,12 +24,25 @@ import {
   type Announcement,
   type LiveContext,
 } from "../utils/ariaLive.ts";
-import { finder } from "../utils/finder.ts";
+import { collectSelectorRoots, findSelector, formatSelector } from "../utils/finder.ts";
 import { isElRendered } from "../utils/isElRendered.ts";
-import { applyToShadows } from "../utils/applyToShadows.ts";
 
 const HOST_ID = "aria-live-monitor-host";
 const MAX_ENTRIES = 200;
+
+function monitorCaveatText(skippedFrameCount: number): string {
+  return (
+    "Messages are an approximation; real screen readers differ. Closed shadow roots cannot be observed. " +
+    "This monitor's root scan is a snapshot: open shadow roots attached to already-connected hosts after activation require re-running it." +
+    (skippedFrameCount > 0
+      ? ` ${skippedFrameCount.toString()} cross-origin iframe${skippedFrameCount === 1 ? "" : "s"} cannot be observed.`
+      : "")
+  );
+}
+
+export function monitorSelectorText(el: Element): string {
+  return formatSelector(findSelector(el));
+}
 
 /** Superset filter for "might be a live region"; ariaLive.ts makes the real call. */
 const LIVE_SELECTOR = '[aria-live],[role~="alert"],[role~="status"],[role~="log"],[role~="marquee"],[role~="timer"],output';
@@ -60,6 +73,8 @@ function start(): void {
   // -------------------------------------------------------------------------
 
   const observers: MutationObserver[] = [];
+  const observedRoots = new Set<Document | ShadowRoot>();
+  const skippedFrames = new Set<HTMLIFrameElement>();
   const listeners = new AbortController();
   /** Text of each region as of the end of the last batch — the next "before". */
   const textSnapshots = new WeakMap<Element, string>();
@@ -77,8 +92,7 @@ function start(): void {
   let pendingRecords: MutationRecord[] = [];
   let frameHandle: number | null = null;
   let entryCount = 0;
-  /** Roots we could not reach, surfaced in the panel so absence is not read as silence. */
-  const skipped: string[] = [];
+  let caveat: HTMLElement | null = null;
 
   /** Run a page edit the monitor makes on purpose without observing it. */
   function withoutObserving(fn: () => void): void {
@@ -122,12 +136,21 @@ function start(): void {
 
   document.body.appendChild(host);
 
+  function updateCaveat(): void {
+    const text = monitorCaveatText(skippedFrames.size);
+    if (caveat !== null) caveat.textContent = text;
+    // The closed panel is intentionally not page-queryable; mirror its user-facing status on our owned host.
+    host.setAttribute("data-a11y-playpen-monitor-caveat", text);
+  }
+
   // -------------------------------------------------------------------------
   // Observation
   // -------------------------------------------------------------------------
 
   function observeRoot(root: Document | ShadowRoot): void {
-    const target = root instanceof Document ? root.documentElement : root;
+    if (observedRoots.has(root)) return;
+    observedRoots.add(root);
+    const target = root.nodeType === Node.DOCUMENT_NODE ? (root as Document).documentElement : root;
     const observer = new MutationObserver(onMutations);
     observer.observe(target, {
       subtree: true,
@@ -139,6 +162,7 @@ function start(): void {
     });
     observers.push(observer);
     for (const region of Array.from(root.querySelectorAll(LIVE_SELECTOR))) seedSnapshot(region);
+    for (const frame of Array.from(root.querySelectorAll("iframe"))) observeFrame(frame);
   }
 
   function seedSnapshot(region: Element): void {
@@ -146,26 +170,34 @@ function start(): void {
     htmlSnapshots.set(region, region.innerHTML);
   }
 
-  function attachToDocument(doc: Document): void {
-    observeRoot(doc);
-    applyToShadows(doc, (root) => {
-      observeRoot(root);
-    });
-    for (const frame of Array.from(doc.querySelectorAll("iframe"))) {
-      // Cross-origin access throws; there is nothing to monitor in that case.
-      const inner = ((): Document | null => {
-        try {
-          return frame.contentDocument;
-        } catch {
-          return null;
-        }
-      })();
-      if (inner) attachToDocument(inner);
-      else skipped.push("cross-origin iframe");
-    }
+  function recordSkippedFrame(frame: HTMLIFrameElement): void {
+    if (skippedFrames.has(frame)) return;
+    skippedFrames.add(frame);
+    updateCaveat();
   }
 
-  attachToDocument(document);
+  function observeFrame(frame: HTMLIFrameElement): void {
+    const observeLoadedDocument = (): void => {
+      try {
+        const frameDocument = frame.contentDocument;
+        if (frameDocument) observeSnapshot(frameDocument);
+        else recordSkippedFrame(frame);
+      } catch {
+        recordSkippedFrame(frame);
+      }
+    };
+    observeLoadedDocument();
+    frame.addEventListener("load", observeLoadedDocument, { signal: listeners.signal });
+  }
+
+  function observeSnapshot(root: Document | ShadowRoot): void {
+    // A scan is a snapshot; mutation handling below starts a new scan for roots attached later.
+    const snapshot = collectSelectorRoots(root);
+    for (const visitedRoot of snapshot.visited) observeRoot(visitedRoot);
+    for (const skippedRoot of snapshot.skipped) recordSkippedFrame(skippedRoot.frame);
+  }
+
+  observeSnapshot(document);
   // Built after the scan so the caveat can mention what could not be reached.
   panel.append(makeHeader(), freezeBar, list);
 
@@ -210,21 +242,19 @@ function start(): void {
     for (const record of records) {
       if (record.type === "childList") {
         for (const added of Array.from(record.addedNodes)) {
-          if (!(added instanceof Element)) continue;
+          if (added.nodeType !== Node.ELEMENT_NODE) continue;
+          const addedElement = added as Element;
           // A region can arrive with the insertion rather than be mutated in
           // place — the `role="alert"` toast pattern. Its owner is the new
           // subtree, not the ancestor the record points at.
-          for (const candidate of [added, ...Array.from(added.querySelectorAll(LIVE_SELECTOR))]) {
+          for (const candidate of [addedElement, ...Array.from(addedElement.querySelectorAll(LIVE_SELECTOR))]) {
             const ctx = resolveLiveRegion(candidate);
-            if (ctx && added.contains(ctx.region)) add(ctx, null, true);
+            if (ctx && addedElement.contains(ctx.region)) add(ctx, null, true);
           }
-          // Newly attached shadow roots need their own observer.
-          for (const el of [added, ...Array.from(added.querySelectorAll("*"))]) {
-            if (!el.shadowRoot) continue;
-            observeRoot(el.shadowRoot);
-            applyToShadows(el.shadowRoot, (root) => {
-              observeRoot(root);
-            });
+          // Newly attached open roots and same-origin frames receive their own observers.
+          for (const element of [addedElement, ...Array.from(addedElement.querySelectorAll("*"))]) {
+            if (element.shadowRoot) observeSnapshot(element.shadowRoot);
+            if (element.localName === "iframe") observeFrame(element as HTMLIFrameElement);
           }
         }
       }
@@ -260,9 +290,8 @@ function start(): void {
   }
 
   function isRendered(region: Element): boolean {
-    if (!(region instanceof HTMLElement)) return true;
     try {
-      return isElRendered(region);
+      return isElRendered(region as HTMLElement);
     } catch {
       return true;
     }
@@ -281,11 +310,12 @@ function start(): void {
 
     const head = document.createElement("div");
     head.className = "alm-entry-head";
+    const selectorSpan = span("alm-sel", monitorSelectorText(ctx.region));
     head.append(
       span("alm-time", new Date().toLocaleTimeString()),
       span("alm-badge", announcement.politeness),
       span("alm-role", ctx.source === "implicit" ? `role=${ctx.roleName ?? "?"}` : "aria-live"),
-      span("alm-sel", selectorFor(ctx.region)),
+      selectorSpan,
     );
     entry.appendChild(head);
 
@@ -332,14 +362,6 @@ function start(): void {
     }
 
     if (pauseOnAnnounce && suppressed === null) freeze();
-  }
-
-  function selectorFor(el: Element): string {
-    try {
-      return finder(el);
-    } catch {
-      return el.tagName.toLowerCase() + (el.id ? `#${el.id}` : "");
-    }
   }
 
   /** Before/after with the changed span marked, via common prefix and suffix. */
@@ -563,12 +585,9 @@ function start(): void {
       button("Close", close),
     );
 
-    const caveat = document.createElement("div");
+    caveat = document.createElement("div");
     caveat.className = "alm-caveat";
-    caveat.textContent =
-      "Messages are an approximation; real screen readers differ. Closed shadow roots" +
-      (skipped.length > 0 ? " and cross-origin iframes" : "") +
-      " cannot be observed.";
+    updateCaveat();
     header.appendChild(caveat);
     return header;
   }

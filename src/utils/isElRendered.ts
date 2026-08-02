@@ -1,61 +1,82 @@
-function closestOther<T extends keyof HTMLElementTagNameMap>(
-  el: HTMLElement | null | undefined,
-  selector: T,
-): HTMLElementTagNameMap[T] | null {
-  if (!el) return null;
-  const r = el.closest(selector);
-  if (r && !r.isSameNode(el)) {
-    return r;
+const DOCUMENT_POSITION_CONTAINED_BY = 16;
+const MAX_ANCESTORS = 1000;
+
+/** The composed parent that can affect an element, including shadow and iframe boundaries. */
+export function renderedParent(el: Element): Element | null {
+  if (el.parentElement !== null) return el.parentElement;
+
+  const root = el.getRootNode();
+  if (root.nodeType === Node.DOCUMENT_FRAGMENT_NODE && "host" in root) return root.host as Element;
+
+  if (root === el.ownerDocument) {
+    try {
+      return el.ownerDocument.defaultView?.frameElement ?? null;
+    } catch {
+      return null;
+    }
   }
   return null;
 }
 
+function firstSummary(details: Element): Element | null {
+  return Array.from(details.children).find((child) => child.localName === "summary") ?? null;
+}
+
+function containsByDocumentPosition(container: Element, node: Element): boolean {
+  return container.isSameNode(node) || (container.compareDocumentPosition(node) & DOCUMENT_POSITION_CONTAINED_BY) !== 0;
+}
+
 /**
-/**
-  * Attempts to identify if the given element is rendered in the DOM
- * Checks display state of ancestors, detached status, visible portion of {@link HTMLDetailsElement} (I.E., if part of <summary> despite being in the closed state, )
-  * @param {HTMLElement} el - The element to check for rendering.
- * @throws -
- * @return {boolean}
+ * Whether an element is visually rendered.
+ *
+ * `display:none`, `content-visibility:hidden`, inherited `visibility:hidden`,
+ * disconnected nodes, and closed-details content are not rendered. A
+ * descendant may override inherited visibility with `visibility:visible`.
+ * `aria-hidden` is intentionally not considered: it changes the accessibility
+ * tree, not visual rendering. Use {@link isElAriaHidden} for that check.
  */
-export function isElRendered(el: HTMLElement): boolean {
-  let c = 0;
-  let cur: HTMLElement | null = el;
+export function isElRendered(el: Element): boolean {
+  let cur: Element | null = el;
+  let branch: Element = el;
+  let visibilityRoot: Element = el;
+  let ancestorCount = 0;
 
-  // temporary type incorrectness
-  let detailsAncestor: HTMLDetailsElement | null = el as HTMLDetailsElement;
-  while ((detailsAncestor = closestOther(detailsAncestor, "details")) !== null) {
-    c += 1;
-    if (c >= 1000) {
-      throw new Error("reached cycle limit");
-    }
-    if (!detailsAncestor.open) {
-      const summaryNode = Array.from(detailsAncestor.children).filter((x) => x instanceof HTMLElement && x.tagName === "SUMMARY");
-      if (summaryNode.length > 1) {
-        console.error("invalid number of summary element children found", detailsAncestor);
-        throw new Error("invalid number of summary element children found");
-      } else if (summaryNode.length === 0) {
-        continue;
-      }
+  while (cur !== null) {
+    ancestorCount += 1;
+    if (ancestorCount >= MAX_ANCESTORS) throw new Error("reached cycle limit");
+    if (!cur.isConnected) return false;
 
-      if (!(summaryNode[0].compareDocumentPosition(el) === Node.DOCUMENT_POSITION_CONTAINED_BY)) {
-        // not in summary node and controlling details element is closed means that this ancestor is not rendered
-        return false;
-      }
-    }
-  }
-  c = 0;
-  while (cur !== null && !cur.isSameNode(document.body)) {
-    if (!cur.isConnected) {
+    const view = cur.ownerDocument.defaultView;
+    if (view === null) return false;
+    const style = view.getComputedStyle(cur);
+    if (style.display === "none" || style.contentVisibility === "hidden") return false;
+
+    if (cur.isSameNode(visibilityRoot) && (style.visibility === "hidden" || style.visibility === "collapse")) {
       return false;
     }
-    const computedStyle = window.getComputedStyle(cur);
-    if (computedStyle.display === "none") return false;
-    cur = cur.parentElement;
-    c += 1;
-    if (c >= 1000) {
-      throw new Error("reached cycle limit");
+
+    if (!cur.isSameNode(el) && cur.localName === "details" && !cur.hasAttribute("open")) {
+      const summary = firstSummary(cur);
+      if (summary === null || !containsByDocumentPosition(summary, branch)) return false;
     }
+
+    const next = renderedParent(cur);
+    if (next !== null && next.ownerDocument !== cur.ownerDocument) visibilityRoot = next;
+    branch = cur;
+    cur = next;
   }
   return true;
+}
+
+/** Whether `el` is excluded from the accessibility tree by an ARIA ancestor. */
+export function isElAriaHidden(el: Element): boolean {
+  let cur: Element | null = el;
+  let ancestorCount = 0;
+  while (cur !== null) {
+    ancestorCount += 1;
+    if (ancestorCount >= MAX_ANCESTORS) throw new Error("reached cycle limit");
+    if (cur.getAttribute("aria-hidden")?.trim().toLowerCase() === "true") return true;
+    cur = renderedParent(cur);
+  }
+  return false;
 }

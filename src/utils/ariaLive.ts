@@ -1,14 +1,15 @@
 /**
  * ARIA live-region semantics as pure functions.
  *
- * Deliberately dependency-free: this module is bundled into the MonitorAriaLive
- * bookmarklet via `?inlineTS`, where every import inflates the resulting URL.
- * Keeping the logic here (rather than in the bookmarklet's side-effecting IIFE)
- * is also what makes it unit testable.
+ * This module is bundled into the MonitorAriaLive bookmarklet via `?inlineTS`,
+ * where every import inflates the resulting URL. Keeping the logic here (rather
+ * than in the bookmarklet's side-effecting IIFE) also makes it unit testable.
  *
  * Everything computed here is an *approximation* of what a screen reader would
  * announce. Real assistive technology varies; see {@link Announcement.notes}.
  */
+
+import { isElAriaHidden, isElRendered } from "./isElRendered.ts";
 
 export type Politeness = "polite" | "assertive";
 export type Relevant = "additions" | "removals" | "text";
@@ -154,11 +155,19 @@ export function resolveLiveRegion(node: Node): LiveContext | null {
 }
 
 function isHiddenForAT(el: Element): boolean {
-  if (el.getAttribute("aria-hidden") === "true") return true;
-  if (el instanceof HTMLElement && el.hidden) return true;
+  if (isElAriaHidden(el)) return true;
+  // Connected nodes are subject to hiding outside the subtree passed to
+  // liveRegionText. Detached mutation payloads still need their text captured.
+  if (el.isConnected && !isElRendered(el)) return true;
+  if (el.hasAttribute("hidden")) return true;
   const style = el.ownerDocument.defaultView?.getComputedStyle(el);
   if (style === undefined) return false;
-  return style.display === "none" || style.visibility === "hidden";
+  return (
+    style.display === "none" ||
+    style.visibility === "hidden" ||
+    style.visibility === "collapse" ||
+    style.contentVisibility === "hidden"
+  );
 }
 
 /**

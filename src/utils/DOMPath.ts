@@ -212,7 +212,7 @@ const xPathValue = function (node: Node, optimized?: boolean): Step | null {
   switch (node.nodeType) {
     case Node.ELEMENT_NODE:
       if (optimized && (node as HTMLElement).getAttribute("id")) {
-        return new Step('//*[@id="' + ((node as HTMLElement).getAttribute("id") ?? "ERR") + '"]', true);
+        return new Step("//*[@id=" + xPathLiteral((node as HTMLElement).getAttribute("id") ?? "ERR") + "]", true);
       }
       ownValue = node.nodeName;
       break;
@@ -268,7 +268,7 @@ const xPathIndex = function (node: Node): number {
     return leftType === rightType;
   }
 
-  const siblings = node.parentNode ? node.parentNode.children : null;
+  const siblings = node.parentNode ? node.parentNode.childNodes : null;
   if (!siblings) {
     return 0;
   } // Root node - no siblings.
@@ -293,6 +293,12 @@ const xPathIndex = function (node: Node): number {
   }
   return -1; // An error occurred: |node| not found in parent's children.
 };
+
+function xPathLiteral(value: string): string {
+  if (!value.includes('"')) return '"' + value + '"';
+  if (!value.includes("'")) return "'" + value + "'";
+  return "concat(" + value.split('"').map((part) => '"' + part + '"').join(", '\"', ") + ")";
+}
 
 export class Step {
   value: string;

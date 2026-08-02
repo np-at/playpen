@@ -106,14 +106,14 @@ These tasks establish the contracts required by all later work.
 **Files:** `src/utils/finder.ts`, `src/utils/DOMPath.ts`, `src/_bookmarklets/Pathify.ts`,
 `src/_bookmarklets/MakeSkele.ts`, `src/_bookmarklets/MonitorAriaLive.ts`
 
-- [ ] Define one supported selector API that derives its query root from `input.getRootNode()` and returns both the selector and
+- [x] Define one supported selector API that derives its query root from `input.getRootNode()` and returns both the selector and
   its document/shadow-root context.
-- [ ] Verify every generated selector by asserting that querying the same root returns exactly the input element.
-- [ ] Support same-origin iframe documents and open shadow roots, or return an explicit structured unsupported result.
-- [ ] In `DOMPath.xPath`, escape IDs containing quotes and index text/comment nodes through `childNodes`, not `children`.
-- [ ] Remove Pathify's `findShortestUniqueClassCombination()` and broken fallback: it can return an ancestor selector and computes
+- [x] Verify every generated selector by asserting that querying the same root returns exactly the input element.
+- [x] Support same-origin iframe documents and open shadow roots, or return an explicit structured unsupported result.
+- [x] In `DOMPath.xPath`, escape IDs containing quotes and index text/comment nodes through `childNodes`, not `children`.
+- [x] Remove Pathify's `findShortestUniqueClassCombination()` and broken fallback: it can return an ancestor selector and computes
   `:nth-of-type()` one position too high.
-- [ ] Add tests for duplicate IDs, CSS-special characters, unique ancestor classes, first/middle/last siblings, SVG/MathML,
+- [x] Add tests for duplicate IDs, CSS-special characters, unique ancestor classes, first/middle/last siblings, SVG/MathML,
   shadow-root targets, iframe targets, and XPath IDs containing both quote styles.
 
 ### Repair document/shadow/iframe traversal
@@ -121,33 +121,33 @@ These tasks establish the contracts required by all later work.
 **Files:** `src/utils/applyToShadows.ts`, `src/utils/digIntoIframes.ts`; consumers `ForceFocusOutline.ts`,
 `TextSpacing.ts`, `showHeadings.ts`, `MonitorAriaLive.ts`
 
-- [ ] Replace the unreadable asynchronous `fetch(..., {mode: "no-cors"})` fallback with a synchronous traversal result that
+- [x] Replace the unreadable asynchronous `fetch(..., {mode: "no-cors"})` fallback with a synchronous traversal result that
   records skipped cross-origin frames.
-- [ ] Prevent duplicate visits and recursion cycles; return visited documents/roots and skipped-root metadata.
-- [ ] Decide how consumers handle frames or shadow roots added after activation: observe them or explicitly label the scan as a
+- [x] Prevent duplicate visits and recursion cycles; return visited documents/roots and skipped-root metadata.
+- [x] Decide how consumers handle frames or shadow roots added after activation: observe them or explicitly label the scan as a
   snapshot.
-- [ ] Avoid top-realm `instanceof Element`/`HTMLElement` checks for iframe nodes; use `nodeType`, `ownerDocument.defaultView`, or
+- [x] Avoid top-realm `instanceof Element`/`HTMLElement` checks for iframe nodes; use `nodeType`, `ownerDocument.defaultView`, or
   constructors from the node's realm.
-- [ ] Add nested same-origin iframe, cross-origin iframe, open shadow-root, and dynamically added root tests.
+- [x] Add nested same-origin iframe, cross-origin iframe, open shadow-root, and dynamically added root tests.
 
 ### Correct rendered-state detection
 
 **Files:** `src/utils/isElRendered.ts`, `src/utils/ariaLive.ts`; consumers `FocusStyleCheck.ts`,
 `MonitorAriaLive.ts`, `showHeadings.ts`
 
-- [ ] Change the `<details>/<summary>` containment check to use the `compareDocumentPosition()` bitmask.
-- [ ] Walk through shadow hosts and use `el.ownerDocument.defaultView?.getComputedStyle(el)` for iframe elements.
-- [ ] Define and test whether "rendered" includes `visibility: hidden`, `content-visibility`, `aria-hidden`, disconnected nodes,
+- [x] Change the `<details>/<summary>` containment check to use the `compareDocumentPosition()` bitmask.
+- [x] Walk through shadow hosts and use `el.ownerDocument.defaultView?.getComputedStyle(el)` for iframe elements.
+- [x] Define and test whether "rendered" includes `visibility: hidden`, `content-visibility`, `aria-hidden`, disconnected nodes,
   and hidden ancestors; keep visual rendering and AT-hidden checks separate where needed.
-- [ ] Add tests for closed details, descendants of the first summary, hidden shadow hosts, iframe elements, and `aria-hidden`
+- [x] Add tests for closed details, descendants of the first summary, hidden shadow hosts, iframe elements, and `aria-hidden`
   ancestors.
 
 ### Make assertions portable
 
 **Files:** `src/utils/assert.ts`
 
-- [ ] Guard the V8-only `Error.captureStackTrace` call so assertions preserve their intended error on Firefox and Safari.
-- [ ] Add a browser test that temporarily removes `Error.captureStackTrace`.
+- [x] Guard the V8-only `Error.captureStackTrace` call so assertions preserve their intended error on Firefox and Safari.
+- [x] Add a browser test that temporarily removes `Error.captureStackTrace`.
 
 ---
 
@@ -157,14 +157,14 @@ These tasks establish the contracts required by all later work.
 
 **Files:** `src/_bookmarklets/FocusStyleCheck.ts`; shared lifecycle/rendering utilities
 
-- [ ] Replace fragment navigation and `location.assign()` with `el.focus({preventScroll: true})`.
-- [ ] Wait for an animation frame, verify `document.activeElement === el`, and only then collect focused styles.
-- [ ] Preserve and restore the original active element, scroll position, URL/hash/history, and any temporary attributes.
-- [ ] Do not add permanent IDs to tested elements.
-- [ ] Replace the incomplete selector with tested focusability logic covering native controls, links, summary, editable content,
+- [x] Replace fragment navigation and `location.assign()` with `el.focus({preventScroll: true})`.
+- [x] Wait for an animation frame, verify `document.activeElement === el`, and only then collect focused styles.
+- [x] Preserve and restore the original active element, scroll position, URL/hash, reliably comparable history state, and any temporary attributes; report that arbitrary `History.state` structured-clone representations cannot be guaranteed fully restorable.
+- [x] Do not add permanent IDs to tested elements.
+- [x] Replace the incomplete selector with tested focusability logic covering native controls, links, summary, editable content,
   media controls, and programmatically focusable elements while excluding disabled/inert/hidden candidates.
-- [ ] Distinguish "could not focus" from "focused but no visible style difference" in output.
-- [ ] Add tests for `:focus`, `:focus-visible`, pseudo-element focus styles, programmatic-only targets, and no page-state changes.
+- [x] Distinguish "could not focus" from "focused but no visible style difference" in output.
+- [x] Add tests for `:focus`, `:focus-visible`, pseudo-element focus styles, programmatic-only targets, and no page-state changes.
 
 ### Repair the focus trace tool (`fcs`)
 

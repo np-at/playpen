@@ -1,7 +1,7 @@
 import { getName } from "aria-api";
 import { drawBox, type DrawStyleProps, ensureBoundingStyleAvailable } from "../utils/drawUtils";
 import { makeDraggableDisplay } from "../utils/makeDraggableOverlay";
-import { finder } from "../utils/finder";
+import { findSelector, type SelectorResult } from "../utils/finder";
 import { activateBookmarklet, type BookmarkletLifecycle } from "../utils/bookmarkletLifecycle";
 
 const rel_showImageAlt = "aria-show-image-alt" as const;
@@ -32,14 +32,14 @@ function createDisplayDiv(lifecycle: BookmarkletLifecycle): HTMLDivElement {
   document.body.appendChild(displayDiv);
   return displayDiv;
 }
-function addDisplayItem(lifecycle: BookmarkletLifecycle, text: string, style: DrawStyleProps, scrollTo?: string): void {
+function addDisplayItem(lifecycle: BookmarkletLifecycle, text: string, style: DrawStyleProps, scrollTo?: SelectorResult): void {
   const display = displayDiv(lifecycle);
   const item = document.createElement("li");
   item.innerText = text;
   Object.assign(item.style, style);
-  if (scrollTo)
+  if (scrollTo?.supported)
     item.onclick = () => {
-      const el = document.querySelector(`[rel=${scrollTo}]`);
+      const el = scrollTo.root.querySelector(scrollTo.selector);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
       }
@@ -97,7 +97,7 @@ export default function _main(lifecycle: BookmarkletLifecycle): void {
       style,
       utilityName: rel_showImageAlt,
     });
-    const selector = finder(el);
+    const selector = findSelector(el);
     addDisplayItem(lifecycle, overlayText, style, selector);
     // if (alt === "") {
     // }

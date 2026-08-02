@@ -1,60 +1,15 @@
 // stolen from https://codepen.io/stevef/pen/YLMqbo
+import { collectSelectorRoots } from "../utils/finder.ts";
+import { activateBookmarklet } from "../utils/bookmarkletLifecycle.ts";
 
-function TextSpacing(): void {
-  const d = document;
-  const id = "phltsbkmklt";
-  const el = d.getElementById(id);
-  const f = d.querySelectorAll("iframe");
-  let i: number;
-  const l = f.length;
-  if (el != null) {
-    function removeFromShadows(root: ShadowRoot | Document | undefined): void {
-      for (const el of Array.from(root?.querySelectorAll("*") ?? [])) {
-        if (el.shadowRoot != null) {
-          el.shadowRoot.getElementById(id)?.remove();
-          removeFromShadows(el.shadowRoot);
-        }
-      }
-    }
+const TOOL_NAME = "text-spacing";
+const TEXT_SPACING_STYLE =
+  "*{line-height:1.5 !important;letter-spacing:0.12em !important;word-spacing:0.16em !important;}p{margin-bottom:2em !important;}";
 
-    el.remove();
-    if (l !== 0) {
-      for (i = 0; i < l; i++) {
-        try {
-          f[i].contentWindow?.document.getElementById(id)?.remove();
-          removeFromShadows(f[i].contentWindow?.document);
-        } catch (e) {
-          console.log(e);
-        }
-      }
-    }
-    removeFromShadows(d);
-  } else {
-    const s = d.createElement("style");
-    s.id = id;
-    s.style.display = "none";
-    s.innerText =
-      "*{line-height:1.5 !important;letter-spacing:0.12em !important;word-spacing:0.16em !important;}p{margin-bottom:2em !important;}";
-
-    function applyToShadows(root: ShadowRoot | Document | undefined): void {
-      for (const el of Array.from(root?.querySelectorAll("*") ?? [])) {
-        if (el.shadowRoot != null) {
-          el.shadowRoot.appendChild(s.cloneNode(true));
-          applyToShadows(el.shadowRoot);
-        }
-      }
-    }
-
-    d.getElementsByTagName("head")[0].appendChild(s);
-    for (i = 0; i < l; i++) {
-      try {
-        f[i].contentWindow?.document.getElementsByTagName("head")[0].appendChild(s.cloneNode(true));
-        applyToShadows(f[i].contentWindow?.document);
-      } catch (e) {
-        console.log(e);
-      }
-    }
-    applyToShadows(d);
-  }
+const lifecycle = activateBookmarklet(TOOL_NAME);
+if (lifecycle !== null) {
+  // This is intentionally a snapshot: re-run the bookmarklet after new roots are attached.
+  const snapshot = collectSelectorRoots(document);
+  for (const root of snapshot.visited) lifecycle.style(root, TEXT_SPACING_STYLE);
+  if (snapshot.skipped.length > 0) console.warn("Text Spacing skipped cross-origin iframes", snapshot.skipped);
 }
-TextSpacing();
