@@ -7,7 +7,7 @@ export type ObscuredResult = { status: ObscuredStatus; coveredBy: Element[] };
 const GRID = 5;
 
 /** `ancestor` is `node` or one of its ancestors, crossing shadow boundaries. */
-function composedContains(ancestor: Element, node: Element): boolean {
+export function composedContains(ancestor: Element, node: Element): boolean {
   for (let cur: Element | null = node; cur !== null; cur = renderedParent(cur)) {
     if (cur === ancestor) return true;
   }

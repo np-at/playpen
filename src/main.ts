@@ -59,6 +59,9 @@ void import("./_bookmarklets/TabOrder.ts?inlineTS").then((x) => {
 void import("./_bookmarklets/FocusObscured.ts?inlineTS").then((x) => {
   makeLink(x.default, "FocusObscured");
 });
+void import("./_bookmarklets/TargetSize.ts?inlineTS").then((x) => {
+  makeLink(x.default, "TargetSize");
+});
 
 /* ---------- theme ---------- */
 
