@@ -3,7 +3,7 @@ import { isElRendered, renderedParent } from "./isElRendered.ts";
 
 type Focusable = HTMLElement | SVGElement;
 
-function isInert(el: Element): boolean {
+export function isInert(el: Element): boolean {
   for (let cur: Element | null = el; cur !== null; cur = renderedParent(cur)) {
     if (cur.hasAttribute("inert")) return true;
   }
