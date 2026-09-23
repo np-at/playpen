@@ -1,3 +1,5 @@
+import { renderedParent } from "./isElRendered.ts";
+
 const TOOL_ATTRIBUTE = "data-a11y-playpen-tool";
 const REGISTRY_KEY = Symbol.for("a11y-playpen.bookmarklet-lifecycle-registry");
 const VALID_TOOL_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -242,4 +244,12 @@ export function teardownBookmarklet(toolName: string): boolean {
   if (lifecycle === undefined) return false;
   lifecycle.teardown();
   return true;
+}
+
+/** Whether `el` belongs to any playpen bookmarklet's own UI (crosses shadow boundaries). */
+export function isToolNode(el: Element): boolean {
+  for (let cur: Element | null = el; cur !== null; cur = renderedParent(cur)) {
+    if (cur.hasAttribute(TOOL_ATTRIBUTE)) return true;
+  }
+  return false;
 }

@@ -53,6 +53,9 @@ void import("./_bookmarklets/TextObserver.ts?inlineTS").then((x) => {
 void import("./_bookmarklets/FocusStyleCheck.ts?inlineTS").then((x) => {
   makeLink(x.default, "FocusStyleCheck");
 });
+void import("./_bookmarklets/TabOrder.ts?inlineTS").then((x) => {
+  makeLink(x.default, "TabOrder");
+});
 
 /* ---------- theme ---------- */
 
