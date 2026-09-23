@@ -380,7 +380,7 @@ async function restoreHistoryState(documentRoot: Document, state: PageState): Pr
   return mutation;
 }
 
-async function withPageStatesRestored<T>(
+export async function withPageStatesRestored<T>(
   documents: Document[],
   operation: (states: Map<Document, PageState>) => Promise<T>,
 ): Promise<{ historyMutations: FocusStyleHistoryMutation[]; restorationFailures: FocusStyleRestorationFailure[]; result: T }> {
