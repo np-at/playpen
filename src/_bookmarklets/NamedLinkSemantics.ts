@@ -6,10 +6,11 @@ import { scanNamedLinks } from "../utils/namedLinkSemantics.ts";
 
 const MARKER = "data-a11y-named-link";
 function describe(element: Element): string {
-  const text = (element.textContent || element.getAttribute("aria-label") || element.getAttribute("alt") || "")
-    .slice(0, 100)
-    .replace(/\s+/g, " ")
-    .trim();
+  const clean = (value: string | null): string => (value ?? "").replace(/\s+/g, " ").trim();
+  const text = (clean(element.textContent) || clean(element.getAttribute("aria-label")) || clean(element.getAttribute("alt"))).slice(
+    0,
+    100,
+  );
   return `${element.localName}${element.id ? `#${element.id}` : ""}${text ? ` "${text}"` : ""}`;
 }
 
