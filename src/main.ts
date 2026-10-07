@@ -32,6 +32,9 @@ void import("./_bookmarklets/HoverTest.ts?inlineTS").then((x) => {
 void import("./_bookmarklets/IdentifyExplicitNames.ts?inlineTS").then((x) => {
   makeLink(x.default, "IdentifyExplicitNames");
 });
+void import("./_bookmarklets/NamedLinkSemantics.ts?inlineTS").then((x) => {
+  makeLink(x.default, "Named Link Semantics");
+});
 void import("./_bookmarklets/ImageCheck.ts?inlineTS").then((x) => {
   makeLink(x.default, "ImageChecker");
 });
