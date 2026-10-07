@@ -5,7 +5,13 @@ import { makeDraggableDisplay } from "../utils/makeDraggableOverlay.ts";
 import { scanNamedLinks } from "../utils/namedLinkSemantics.ts";
 
 const MARKER = "data-a11y-named-link";
-const describe = (element: Element): string => formatSelector(findSelector(element));
+function describe(element: Element): string {
+  const text = (element.textContent || element.getAttribute("aria-label") || element.getAttribute("alt") || "")
+    .slice(0, 100)
+    .replace(/\s+/g, " ")
+    .trim();
+  return `${element.localName}${element.id ? `#${element.id}` : ""}${text ? ` "${text}"` : ""}`;
+}
 
 function run(lifecycle: BookmarkletLifecycle): void {
   const panel = makeDraggableDisplay(lifecycle);
@@ -26,7 +32,7 @@ function run(lifecycle: BookmarkletLifecycle): void {
   title.textContent = "Named Link Semantics";
   const help = document.createElement("p");
   help.textContent =
-    "Review candidates, not automatic failures. Orange outlines mark named links; purple dashed outlines mark semantic or focusable descendants (including tabindex=-1). Naming attributes are shown as authored; verify referenced labels and screen reader behavior. Closed shadow roots cannot be inspected.";
+    "Review candidates, not automatic failures. Orange outlines mark named links; purple dashed outlines mark semantic or focusable descendants (including tabindex=-1). All non-generic semantic roles are included, including paragraph, strong, and emphasis. Click a result to reveal it and log its full selector. Naming attributes are shown as authored; verify referenced labels and screen reader behavior. Closed shadow roots cannot be inspected.";
   const rescan = document.createElement("button");
   rescan.type = "button";
   rescan.dataset.rescan = "";
@@ -51,12 +57,14 @@ function run(lifecycle: BookmarkletLifecycle): void {
     }
     marked.clear();
     for (const root of styled) lifecycle.style(root, "");
+    styled.clear();
   };
   lifecycle.addCleanup(clear);
   const mark = (element: Element, kind: string): void => {
     if (!marked.has(element)) marked.set(element, element.getAttribute(MARKER));
     element.setAttribute(MARKER, kind);
     const root = element.getRootNode() as SelectorRoot;
+    if (styled.has(root)) return;
     styled.add(root);
     lifecycle.style(
       root,
@@ -76,7 +84,7 @@ function run(lifecycle: BookmarkletLifecycle): void {
     targets = [];
     list.replaceChildren();
     const { results, skipped } = scanNamedLinks(document);
-    summary.textContent = `${String(results.length)} links to review. ${String(skipped.length)} inaccessible frames skipped.`;
+    summary.textContent = `${String(results.length)} ${results.length === 1 ? "link" : "links"} to review. ${String(skipped.length)} inaccessible ${skipped.length === 1 ? "frame" : "frames"} skipped.`;
     for (const result of results) {
       mark(result.link, "link");
       const row = document.createElement("li");
@@ -104,7 +112,7 @@ function run(lifecycle: BookmarkletLifecycle): void {
     if (!button) return;
     const target = targets[Number(button.dataset.inspect)];
     target.scrollIntoView({ block: "center", inline: "nearest" });
-    console.log("Named Link Semantics — inspect", target);
+    console.log("Named Link Semantics — inspect", formatSelector(findSelector(target)), target);
   });
   lifecycle.listen(rescan, "click", scan);
   lifecycle.listen(close, "click", () => {

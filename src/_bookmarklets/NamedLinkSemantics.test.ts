@@ -52,3 +52,18 @@ it("toggles off on a second execution", async () => {
   await run("toggle-off");
   expect(document.querySelector(TOOL)).toBeNull();
 });
+
+it("labels results with readable content before inspection", async () => {
+  const root = document.createElement("div");
+  root.innerHTML = '<a href="#" aria-label="Card"><h2>A readable card heading</h2></a>';
+  document.body.append(root);
+  fixtures.push(root);
+  await run("readable-labels");
+  const panel = document.querySelector<HTMLDivElement>(`div${TOOL}`);
+  assert(panel !== null);
+  const buttons = Array.from(panel.querySelectorAll<HTMLButtonElement>("button[data-inspect]"));
+  expect(buttons.map((button) => button.textContent)).toEqual([
+    'a "A readable card heading"',
+    'h2 "A readable card heading" — heading',
+  ]);
+});

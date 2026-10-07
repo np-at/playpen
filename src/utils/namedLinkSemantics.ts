@@ -1,5 +1,4 @@
 import { getRole } from "aria-api";
-import { isToolNode } from "./bookmarkletLifecycle.ts";
 import { collectSelectorRoots, type SkippedSelectorRoot } from "./finder.ts";
 import { isElRendered, renderedParent } from "./isElRendered.ts";
 
@@ -19,7 +18,7 @@ function children(element: Element): Element[] {
 
 function* descendants(element: Element): Generator<Element> {
   for (const child of children(element)) {
-    if (isToolNode(child)) continue;
+    if (child.hasAttribute("data-a11y-playpen-tool")) continue;
     yield child;
     yield* descendants(child);
   }
@@ -59,7 +58,10 @@ function isFocusable(element: Element): boolean {
     return Array.from(element.parentElement.children).find((child) => child.localName === "summary") === element;
   }
   // Only editing hosts are independently focusable, not every inherited editable descendant.
-  return (element as HTMLElement).isContentEditable && element.parentElement?.isContentEditable !== true;
+  return (
+    Boolean((element as Element & { isContentEditable?: boolean }).isContentEditable) &&
+    element.parentElement?.isContentEditable !== true
+  );
 }
 
 // Global ARIA properties trigger presentation-role conflict resolution.

@@ -161,3 +161,8 @@ it("does not flag display:contents as focusable but still inspects its descendan
   expect(result.descendants.map((item) => item.element.id)).toEqual(["nested"]);
   expect(result.descendants[0].focusable).toBe(true);
 });
+
+it("returns boolean focusability for SVG semantics", () => {
+  fixture('<a href="#" aria-label="Chart"><svg role="img" aria-label="Trend"></svg></a>');
+  expect(scanNamedLinks(document).results[0].descendants[0]).toMatchObject({ role: "image", focusable: false });
+});
