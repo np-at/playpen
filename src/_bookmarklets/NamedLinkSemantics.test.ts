@@ -67,3 +67,16 @@ it("labels results with readable content before inspection", async () => {
     'h2 "A readable card heading" — heading',
   ]);
 });
+
+it("normalizes indented text and whitespace-only fallbacks before truncating row labels", async () => {
+  const root = document.createElement("div");
+  root.innerHTML = `<a href="#" aria-label="Card">${"\n    ".repeat(30)}<h3>Blue widget</h3></a>
+    <a href="#" aria-label="  Profile  ">\n  <svg role="img" aria-label="avatar"></svg>\n</a>`;
+  document.body.append(root);
+  fixtures.push(root);
+  await run("indented-labels");
+  const panel = document.querySelector<HTMLDivElement>(`div${TOOL}`);
+  assert(panel !== null);
+  const labels = Array.from(panel.querySelectorAll<HTMLButtonElement>("button[data-inspect]"), (button) => button.textContent);
+  expect(labels).toEqual(['a "Blue widget"', 'h3 "Blue widget" — heading', 'a "Profile"', 'svg "avatar" — image']);
+});
