@@ -9,7 +9,7 @@ import { type Plugin } from "vite";
 const SOURCE_ROOT = "src/";
 
 function findFiles(matchRegex: RegExp | RegExp[], opts?: { startDir: string; ignore?: RegExp[] }): string[] {
-  const startDir = opts?.startDir ?? __dirname;
+  const startDir = opts?.startDir ?? import.meta.dirname;
   const ignoreRE = opts?.ignore ?? [/node_modules/, /\.git/, /dist/, /\.worktrees/];
   const _matchRE = Array.isArray(matchRegex) ? matchRegex : [matchRegex];
   const files = readdirSync(startDir, { withFileTypes: true, recursive: false });
@@ -31,15 +31,15 @@ function findFiles(matchRegex: RegExp | RegExp[], opts?: { startDir: string; ign
   return matches;
 }
 
-export const htmlFiles = findFiles(/.*\.html$/, { startDir: __dirname }).reduce<Record<string, string>>((prev, x) => {
+export const htmlFiles = findFiles(/.*\.html$/, { startDir: import.meta.dirname }).reduce<Record<string, string>>((prev, x) => {
   const key = relative(SOURCE_ROOT, x);
   // if (basename(key, ".html") === "index") {
   //   key = dirname(key);
   // }
 
-  prev[key] = resolve(__dirname, x);
+  prev[key] = resolve(import.meta.dirname, x);
   // if (key.endsWith("/")) {
-  //   prev[key.slice(0, -1)] = resolve(__dirname, x);
+  //   prev[key.slice(0, -1)] = resolve(import.meta.dirname, x);
   // }
   return prev;
 }, {});

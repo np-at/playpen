@@ -13,6 +13,9 @@ minimumReleaseAgeExclude:
   - dompurify@3.4.9 || 3.4.11 || 3.4.12 || 3.4.13
   - '@types/node@26.1.2 || 26.2.0'
   - eslint@10.8.1
+  - "@playwright/test@1.64.0"
+  - playwright-core@1.64.0
+  - playwright@1.64.0
 onlyBuiltDependencies:
   - esbuild
 overrides:
